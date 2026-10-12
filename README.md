@@ -155,3 +155,4 @@ API coverage includes auth, booking transitions, availability overlap (`AVAILABI
 - [AGORA.md](./AGORA.md) — tokens, 1:1 calls, admin observe
 - [DEPLOYMENT.md](./DEPLOYMENT.md) — VPS, cPanel, stores
 - [HANDOVER.md](./HANDOVER.md) — delivery checklist
+# zaya_events
