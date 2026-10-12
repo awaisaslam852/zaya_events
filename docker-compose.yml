@@ -1,0 +1,94 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-zaya}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-zaya_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-zaya_events}
+    ports:
+      - "5432:5432"
+    volumes:
+      - zaya_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-zaya} -d ${POSTGRES_DB:-zaya_events}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - zaya_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-zaya}:${POSTGRES_PASSWORD:-zaya_dev_password}@postgres:5432/${POSTGRES_DB:-zaya_events}?schema=public
+      REDIS_URL: redis://redis:6379
+      STORAGE_PUBLIC_URL: http://localhost:4000
+    ports:
+      - "4000:4000"
+    volumes:
+      - zaya_uploads:/app/apps/api/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  admin-web:
+    build:
+      context: .
+      dockerfile: apps/admin-web/Dockerfile
+      args:
+        VITE_API_URL: http://localhost:4000
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    depends_on:
+      - api
+
+  vendor-web:
+    build:
+      context: .
+      dockerfile: apps/vendor-web/Dockerfile
+      args:
+        VITE_API_URL: http://localhost:4000
+    restart: unless-stopped
+    ports:
+      - "5174:80"
+    depends_on:
+      - api
+
+  minio:
+    image: minio/minio:latest
+    profiles: ["spaces"]
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${SPACES_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${SPACES_SECRET_KEY:-minioadmin}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - zaya_minio_data:/data
+
+volumes:
+  zaya_pg_data:
+  zaya_redis_data:
+  zaya_uploads:
+  zaya_minio_data:

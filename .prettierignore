@@ -1,0 +1,13 @@
+node_modules
+dist
+build
+coverage
+.dart_tool
+ios
+android
+mobile/ios
+mobile/android
+pnpm-lock.yaml
+uploads
+*.iml
+.idea

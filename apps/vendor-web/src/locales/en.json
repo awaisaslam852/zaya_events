@@ -1,0 +1,94 @@
+{
+  "app": { "name": "Zaya Events Vendors" },
+  "auth": {
+    "login": "Sign in",
+    "register": "Apply as vendor",
+    "email": "Email",
+    "password": "Password",
+    "logout": "Log out",
+    "vendorOnly": "Vendor access only",
+    "invalidRole": "This account is not a vendor",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "phone": "Phone",
+    "country": "Country",
+    "legalName": "Legal / trade name",
+    "taxId": "Tax ID / TRN",
+    "website": "Website"
+  },
+  "common": {
+    "search": "Search",
+    "prev": "Previous",
+    "next": "Next",
+    "save": "Save",
+    "create": "Create",
+    "edit": "Edit",
+    "delete": "Delete",
+    "actions": "Actions",
+    "status": "Status",
+    "english": "English",
+    "arabic": "Arabic",
+    "upload": "Upload",
+    "uploading": "Uploading…",
+    "uploaded": "Uploaded",
+    "photos": "Photos",
+    "photosHint": "Add multiple photos. Tap a thumbnail to enlarge.",
+    "error": "Something went wrong",
+    "loading": "Loading…",
+    "empty": "No records",
+    "approve": "Accept",
+    "reject": "Reject",
+    "city": "City",
+    "price": "Price",
+    "notes": "Notes",
+    "languageHint": "Switch the app language in the header. You enter each field once — not separately in English and Arabic."
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "profile": "Profile",
+    "listings": "Listings",
+    "cars": "Cars",
+    "availability": "Availability",
+    "bookings": "Bookings",
+    "earnings": "Earnings",
+    "messages": "Messages",
+    "calls": "Calls",
+    "notifications": "Notifications",
+    "settings": "Settings"
+  },
+  "dashboard": {
+    "bookings": "Bookings",
+    "upcoming": "Upcoming events",
+    "requests": "Requests",
+    "earnings": "Earnings summary",
+    "pending": "Your application is pending review"
+  },
+  "bookings": {
+    "underReview": "Under review",
+    "confirm": "Confirm",
+    "complete": "Complete",
+    "cancel": "Cancel",
+    "calendar": "Calendar"
+  },
+  "calls": {
+    "incoming": "Incoming call",
+    "accept": "Accept",
+    "reject": "Reject",
+    "end": "End",
+    "mute": "Mute",
+    "camera": "Camera",
+    "inCall": "In call"
+  },
+  "earnings": {
+    "totals": "Totals",
+    "deposits": "Deposits",
+    "balances": "Balances",
+    "history": "Payout history",
+    "hint": "Amounts shown are booking totals only. Commission rates and settlements are managed by Zaya."
+  },
+  "settings": {
+    "profile": "Profile",
+    "notifications": "Notification preferences",
+    "language": "Language"
+  }
+}

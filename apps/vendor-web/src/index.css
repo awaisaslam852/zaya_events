@@ -1,0 +1,51 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 33% 97%;
+    --foreground: 214 54% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 214 54% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 214 54% 12%;
+    --primary: 214 100% 25%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 205 100% 95%;
+    --secondary-foreground: 214 100% 25%;
+    --muted: 210 25% 94%;
+    --muted-foreground: 215 14% 40%;
+    --accent: 44 99% 50%;
+    --accent-foreground: 214 54% 12%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214 20% 88%;
+    --input: 214 20% 88%;
+    --ring: 205 100% 38%;
+    --radius: 0.75rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html,
+  body,
+  #root {
+    min-height: 100%;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+  }
+}
+
+@layer components {
+  .brand-hero {
+    background: linear-gradient(135deg, #003580 0%, #006ce4 52%, #009fe3 100%);
+  }
+}

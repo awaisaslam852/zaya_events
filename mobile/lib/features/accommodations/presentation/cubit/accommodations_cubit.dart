@@ -1,0 +1,28 @@
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../domain/usecases/accommodations_usecases.dart';
+import 'accommodations_state.dart';
+
+class AccommodationsCubit extends Cubit<AccommodationsState> {
+  AccommodationsCubit(this._list, this._get) : super(const AccommodationsState());
+
+  final ListAccommodations _list;
+  final GetAccommodations _get;
+
+  Future<void> load({Map<String, dynamic>? query}) async {
+    emit(state.copyWith(loading: true, error: null));
+    final result = await _list(query: query);
+    result.fold(
+      (f) => emit(state.copyWith(loading: false, error: f.message)),
+      (page) => emit(state.copyWith(loading: false, items: page.items)),
+    );
+  }
+
+  Future<void> loadOne(String id) async {
+    emit(state.copyWith(loading: true, error: null));
+    final result = await _get(id);
+    result.fold(
+      (f) => emit(state.copyWith(loading: false, error: f.message)),
+      (item) => emit(state.copyWith(loading: false, detail: item)),
+    );
+  }
+}

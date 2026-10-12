@@ -1,0 +1,1189 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Enums ───────────────────────────────────────────
+
+enum Role {
+  CUSTOMER
+  VENDOR
+  ADMIN
+}
+
+enum UserStatus {
+  PENDING_VERIFICATION
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum VendorStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum BookingType {
+  VENUE
+  LISTING
+  CAR
+  ACCOMMODATION
+  HONEYMOON
+  FLIGHT
+  HOTEL
+}
+
+enum BookingStatus {
+  DRAFT
+  INQUIRY
+  PENDING
+  UNDER_REVIEW
+  CONFIRMED
+  PAID
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  REJECTED
+  REFUNDED
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+enum PaymentProvider {
+  STRIPE
+}
+
+enum PayoutStatus {
+  PENDING
+  PROCESSING
+  PAID
+  FAILED
+  CANCELLED
+}
+
+enum CommissionStatus {
+  ACCRUED
+  SETTLED
+  VOID
+}
+
+enum NotificationChannel {
+  IN_APP
+  PUSH
+  EMAIL
+  WHATSAPP
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+  READ
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  FILE
+  SYSTEM
+}
+
+enum ConversationType {
+  CUSTOMER_VENDOR
+  CUSTOMER_ADMIN
+  VENDOR_ADMIN
+}
+
+enum AvailabilityResourceType {
+  VENUE
+  LISTING
+  CAR
+  ACCOMMODATION
+  REPRESENTATIVE
+  HONEYMOON
+}
+
+enum FavoriteResourceType {
+  VENUE
+  LISTING
+  VENDOR
+  CAR
+  ACCOMMODATION
+  HONEYMOON
+  HOTEL
+}
+
+enum VenueVisitStatus {
+  REQUESTED
+  APPROVED
+  RESCHEDULED
+  CONFIRMED
+  COMPLETED
+  DECIDED
+  CANCELLED
+  NO_SHOW
+}
+
+enum RepresentativeStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum CarTransmission {
+  AUTOMATIC
+  MANUAL
+}
+
+enum AccommodationType {
+  HOTEL_ROOM
+  VILLA
+  APARTMENT
+  RESORT
+  CHALET
+  BUNGALOW
+}
+
+enum CrmSubjectType {
+  USER
+  VENDOR
+  BOOKING
+  EVENT
+  VENUE
+}
+
+enum CrmInteractionType {
+  CALL
+  EMAIL
+  WHATSAPP
+  MEETING
+  NOTE
+  SYSTEM
+}
+
+enum BannerPlacement {
+  HOME_HERO
+  HOME_SECONDARY
+  DISCOVERY
+  VENDOR_DASHBOARD
+}
+
+enum UploadStatus {
+  ACTIVE
+  DELETED
+}
+
+enum AgoraRole {
+  PUBLISHER
+  SUBSCRIBER
+}
+
+enum AvailabilitySlotStatus {
+  AVAILABLE
+  UNAVAILABLE
+  RESERVED
+}
+
+enum PaymentKind {
+  DEPOSIT
+  BALANCE
+  REFUND
+}
+
+enum InvoiceStatus {
+  ISSUED
+  PAID
+  VOID
+}
+
+enum CallStatus {
+  RINGING
+  ACCEPTED
+  REJECTED
+  ENDED
+  MISSED
+}
+
+enum CrmFollowUpStatus {
+  OPEN
+  DONE
+  CANCELLED
+}
+
+// ── Auth & identity ─────────────────────────────────
+
+model User {
+  id               String     @id @default(uuid()) @db.Uuid
+  email            String     @unique
+  phone            String?    @unique
+  passwordHash     String
+  role             Role
+  status           UserStatus @default(PENDING_VERIFICATION)
+  firstName        String
+  lastName         String
+  displayName      String?
+  avatarKey        String?
+  locale           String     @default("en")
+  country          String?
+  emailVerifiedAt  DateTime?
+  phoneVerifiedAt  DateTime?
+  lastLoginAt      DateTime?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  deletedAt        DateTime?
+
+  vendor              Vendor?
+  events              Event[]
+  bookings            Booking[]
+  venueVisits         VenueVisit[]
+  favorites           Favorite[]
+  conversationsAsA    Conversation[]          @relation("ConversationParticipantA")
+  conversationsAsB    Conversation[]          @relation("ConversationParticipantB")
+  messages            Message[]
+  notifications       Notification[]
+  payments            Payment[]
+  invoices            Invoice[]
+  crmNotesAuthored    CrmNote[]               @relation("CrmNoteAuthor")
+  crmInteractions     CrmInteraction[]        @relation("CrmInteractionActor")
+  refreshTokens       RefreshToken[]
+  passwordResets      PasswordResetToken[]
+  deviceTokens        DeviceToken[]
+  uploads             Upload[]
+  bookingStatusEdits  BookingStatusHistory[]
+  representative      Representative?
+  flightBookings      FlightBooking[]
+  hotelBookings       HotelBooking[]
+  callsMade           Call[]                  @relation("CallCaller")
+  callsReceived       Call[]                  @relation("CallCallee")
+  crmFollowUps        CrmFollowUp[]           @relation("CrmFollowUpOwner")
+
+  @@index([role, status])
+  @@index([deletedAt])
+}
+
+model RefreshToken {
+  id         String    @id @default(uuid()) @db.Uuid
+  userId     String    @db.Uuid
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  userAgent  String?
+  ipAddress  String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model PasswordResetToken {
+  id         String    @id @default(uuid()) @db.Uuid
+  userId     String    @db.Uuid
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model DeviceToken {
+  id         String    @id @default(uuid()) @db.Uuid
+  userId     String    @db.Uuid
+  token      String
+  platform   String
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, token])
+  @@index([userId])
+}
+
+model Upload {
+  id          String       @id @default(uuid()) @db.Uuid
+  userId      String       @db.Uuid
+  key         String       @unique
+  url         String
+  contentType String
+  size        Int
+  folder      String?
+  status      UploadStatus @default(ACTIVE)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  deletedAt   DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ── Vendors & catalog ───────────────────────────────
+
+model Vendor {
+  id              String       @id @default(uuid()) @db.Uuid
+  userId          String       @unique @db.Uuid
+  businessName    Json
+  description     Json
+  legalName       String?
+  taxId           String?
+  status          VendorStatus @default(PENDING)
+  commissionRate  Decimal      @default(10.00) @db.Decimal(5, 2)
+  city            String?
+  country         String?
+  address         Json?
+  latitude        Decimal?     @db.Decimal(10, 7)
+  longitude       Decimal?     @db.Decimal(10, 7)
+  coverKey        String?
+  logoKey         String?
+  galleryKeys     Json         @default("[]")
+  serviceAreas    Json         @default("[]")
+  notificationPrefs Json       @default("{\"email\":true,\"push\":true,\"whatsapp\":false}")
+  phone           String?
+  website         String?
+  ratingAvg       Decimal      @default(0) @db.Decimal(3, 2)
+  ratingCount     Int          @default(0)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  deletedAt       DateTime?
+
+  user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  venues              Venue[]
+  listings            Listing[]
+  cars                Car[]
+  accommodations      Accommodation[]
+  honeymoonPackages   HoneymoonPackage[]
+  representatives     Representative[]
+  payouts             Payout[]
+  commissions         Commission[]
+  bookings            Booking[]
+
+  @@index([status])
+  @@index([deletedAt])
+}
+
+model EventCategory {
+  id           String    @id @default(uuid()) @db.Uuid
+  slug         String    @unique
+  name         Json
+  description  Json
+  icon         String?
+  sortOrder    Int       @default(0)
+  isActive     Boolean   @default(true)
+  customFields Json      @default("[]")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  events Event[]
+}
+
+model ServiceCategory {
+  id          String    @id @default(uuid()) @db.Uuid
+  slug        String    @unique
+  name        Json
+  description Json
+  icon        String?
+  sortOrder   Int       @default(0)
+  isActive     Boolean  @default(true)
+  customFields Json     @default("[]")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  deletedAt    DateTime?
+
+  listings Listing[]
+}
+
+model Event {
+  id                  String    @id @default(uuid()) @db.Uuid
+  customerId          String    @db.Uuid
+  categoryId          String    @db.Uuid
+  title               Json
+  description         Json?
+  notes               Json?
+  preferredVenueType  String?
+  eventDate           DateTime
+  endDate             DateTime?
+  guestCount          Int?
+  city                String?
+  country             String?
+  budgetMin           Decimal?  @db.Decimal(12, 2)
+  budgetMax           Decimal?  @db.Decimal(12, 2)
+  currency            String    @default("AED")
+  status              String    @default("planning")
+  checklist           Json      @default("[]")
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  deletedAt           DateTime?
+
+  customer User          @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  category EventCategory @relation(fields: [categoryId], references: [id])
+  bookings Booking[]
+  visits   VenueVisit[]
+
+  @@index([customerId])
+  @@index([categoryId])
+  @@index([eventDate])
+}
+
+model Venue {
+  id            String    @id @default(uuid()) @db.Uuid
+  vendorId      String?   @db.Uuid
+  name          Json
+  description   Json
+  address       Json
+  city          String
+  country       String
+  latitude      Decimal   @db.Decimal(10, 7)
+  longitude     Decimal   @db.Decimal(10, 7)
+  capacityMin   Int
+  capacityMax   Int
+  amenities     Json
+  coverKey      String?
+  galleryKeys   Json
+  ratingAvg     Decimal   @default(0) @db.Decimal(3, 2)
+  ratingCount   Int       @default(0)
+  isPublished   Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+
+  vendor         Vendor?             @relation(fields: [vendorId], references: [id])
+  packages       VenuePackage[]
+  availability   VenueAvailability[]
+  bookings       Booking[]
+  visits         VenueVisit[]
+
+  @@index([vendorId])
+  @@index([city])
+  @@index([deletedAt])
+}
+
+model VenuePackage {
+  id            String    @id @default(uuid()) @db.Uuid
+  venueId       String    @db.Uuid
+  name          Json
+  description   Json
+  priceAmount   Decimal   @db.Decimal(12, 2)
+  currency      String    @default("AED")
+  guestCountMin Int
+  guestCountMax Int
+  durationHours Int
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+
+  venue    Venue     @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  bookings Booking[]
+
+  @@index([venueId])
+}
+
+model VenueAvailability {
+  id         String    @id @default(uuid()) @db.Uuid
+  venueId    String    @db.Uuid
+  date       DateTime  @db.Date
+  startTime  String
+  endTime    String
+  isBlocked  Boolean   @default(false)
+  bookingId  String?   @db.Uuid
+  notes      String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
+
+  venue Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
+
+  @@unique([venueId, date, startTime, endTime])
+  @@index([venueId, date])
+}
+
+model Listing {
+  id            String    @id @default(uuid()) @db.Uuid
+  vendorId      String    @db.Uuid
+  categoryId    String    @db.Uuid
+  title         Json
+  description   Json
+  city          String?
+  country       String?
+  coverKey      String?
+  galleryKeys   Json
+  startingPrice Decimal   @db.Decimal(12, 2)
+  currency      String    @default("AED")
+  isPublished       Boolean  @default(true)
+  ratingAvg         Decimal  @default(0) @db.Decimal(3, 2)
+  ratingCount       Int      @default(0)
+  customFieldValues Json     @default("{}")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  deletedAt         DateTime?
+
+  vendor     Vendor          @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  category   ServiceCategory @relation(fields: [categoryId], references: [id])
+  packages   ListingPackage[]
+  bookings   Booking[]
+
+  @@index([vendorId])
+  @@index([categoryId])
+}
+
+model ListingPackage {
+  id           String    @id @default(uuid()) @db.Uuid
+  listingId    String    @db.Uuid
+  name         Json
+  description  Json
+  priceAmount  Decimal   @db.Decimal(12, 2)
+  currency     String    @default("AED")
+  durationHours Int?
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  listing  Listing   @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  bookings Booking[]
+
+  @@index([listingId])
+}
+
+model Availability {
+  id            String                    @id @default(uuid()) @db.Uuid
+  resourceType  AvailabilityResourceType
+  resourceId    String                    @db.Uuid
+  startAt       DateTime
+  endAt         DateTime
+  status        AvailabilitySlotStatus    @default(AVAILABLE)
+  isBlocked     Boolean                   @default(false)
+  source        String                    @default("internal")
+  bookingId     String?                   @db.Uuid
+  priceOverride Decimal?                  @db.Decimal(12, 2)
+  notes         String?
+  createdAt     DateTime                  @default(now())
+  updatedAt     DateTime                  @updatedAt
+  deletedAt     DateTime?
+
+  @@index([resourceType, resourceId])
+  @@index([startAt, endAt])
+  @@index([bookingId])
+}
+
+model Representative {
+  id         String                @id @default(uuid()) @db.Uuid
+  vendorId   String                @db.Uuid
+  userId     String?               @unique @db.Uuid
+  name       Json
+  phone      String
+  email      String?
+  languages  Json
+  status     RepresentativeStatus  @default(ACTIVE)
+  createdAt  DateTime              @default(now())
+  updatedAt  DateTime              @updatedAt
+  deletedAt  DateTime?
+
+  vendor Vendor       @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  user   User?        @relation(fields: [userId], references: [id])
+  visits VenueVisit[]
+
+  @@index([vendorId])
+}
+
+model Car {
+  id            String          @id @default(uuid()) @db.Uuid
+  vendorId      String          @db.Uuid
+  name          Json
+  description   Json
+  make          String
+  model         String
+  year          Int
+  seats         Int
+  transmission  CarTransmission
+  color         String?
+  plateNumber   String?
+  dailyRate     Decimal         @db.Decimal(12, 2)
+  currency      String          @default("AED")
+  coverKey      String?
+  galleryKeys   Json
+  isPublished   Boolean         @default(true)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  deletedAt     DateTime?
+
+  vendor       Vendor            @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  availability CarAvailability[]
+  bookings     Booking[]
+
+  @@index([vendorId])
+}
+
+model CarAvailability {
+  id         String    @id @default(uuid()) @db.Uuid
+  carId      String    @db.Uuid
+  startAt    DateTime
+  endAt      DateTime
+  isBlocked  Boolean   @default(false)
+  bookingId  String?   @db.Uuid
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
+
+  car Car @relation(fields: [carId], references: [id], onDelete: Cascade)
+
+  @@index([carId, startAt, endAt])
+}
+
+model Accommodation {
+  id            String            @id @default(uuid()) @db.Uuid
+  vendorId      String            @db.Uuid
+  name          Json
+  description   Json
+  type          AccommodationType
+  address       Json
+  city          String
+  country       String
+  latitude      Decimal?          @db.Decimal(10, 7)
+  longitude     Decimal?          @db.Decimal(10, 7)
+  maxGuests     Int
+  bedrooms      Int
+  bathrooms     Int
+  nightlyRate   Decimal           @db.Decimal(12, 2)
+  currency      String            @default("AED")
+  amenities     Json
+  coverKey      String?
+  galleryKeys   Json
+  isPublished   Boolean           @default(true)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  deletedAt     DateTime?
+
+  vendor       Vendor                       @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  availability AccommodationAvailability[]
+  bookings     Booking[]
+
+  @@index([vendorId, city])
+}
+
+model AccommodationAvailability {
+  id              String    @id @default(uuid()) @db.Uuid
+  accommodationId String    @db.Uuid
+  date            DateTime  @db.Date
+  isBlocked       Boolean   @default(false)
+  bookingId       String?   @db.Uuid
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+
+  accommodation Accommodation @relation(fields: [accommodationId], references: [id], onDelete: Cascade)
+
+  @@unique([accommodationId, date])
+}
+
+model HoneymoonPackage {
+  id           String    @id @default(uuid()) @db.Uuid
+  vendorId     String    @db.Uuid
+  name         Json
+  description  Json
+  destination  Json
+  nights       Int
+  priceAmount  Decimal   @db.Decimal(12, 2)
+  currency     String    @default("AED")
+  coverKey     String?
+  galleryKeys  Json
+  inclusions   Json
+  isPublished  Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  vendor   Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  bookings Booking[]
+
+  @@index([vendorId])
+}
+
+model Flight {
+  id           String    @id @default(uuid()) @db.Uuid
+  carrierCode  String
+  flightNumber String
+  origin       String
+  destination  String
+  departureAt  DateTime
+  arrivalAt    DateTime
+  cabin        Json
+  priceAmount  Decimal   @db.Decimal(12, 2)
+  currency     String    @default("AED")
+  seatsLeft    Int       @default(0)
+  providerRef  String?
+  rawPayload   Json?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  bookings FlightBooking[]
+
+  @@index([origin, destination, departureAt])
+}
+
+model FlightBooking {
+  id            String        @id @default(uuid()) @db.Uuid
+  userId        String        @db.Uuid
+  flightId      String        @db.Uuid
+  bookingId     String?       @unique @db.Uuid
+  passengerJson Json
+  pnr           String?
+  status        BookingStatus @default(PENDING)
+  totalAmount   Decimal       @db.Decimal(12, 2)
+  currency      String        @default("AED")
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  deletedAt     DateTime?
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  flight  Flight   @relation(fields: [flightId], references: [id])
+  booking Booking? @relation(fields: [bookingId], references: [id])
+
+  @@index([userId])
+}
+
+model Hotel {
+  id          String    @id @default(uuid()) @db.Uuid
+  name        Json
+  description Json
+  city        String
+  country     String
+  address     Json
+  latitude    Decimal?  @db.Decimal(10, 7)
+  longitude   Decimal?  @db.Decimal(10, 7)
+  starRating  Int?
+  amenities   Json
+  coverKey    String?
+  providerRef String?
+  rawPayload  Json?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  bookings HotelBooking[]
+
+  @@index([city, country])
+}
+
+model HotelBooking {
+  id            String        @id @default(uuid()) @db.Uuid
+  userId        String        @db.Uuid
+  hotelId       String        @db.Uuid
+  bookingId     String?       @unique @db.Uuid
+  checkIn       DateTime      @db.Date
+  checkOut      DateTime      @db.Date
+  rooms         Int           @default(1)
+  guests        Int
+  roomType      Json
+  confirmation  String?
+  status        BookingStatus @default(PENDING)
+  totalAmount   Decimal       @db.Decimal(12, 2)
+  currency      String        @default("AED")
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  deletedAt     DateTime?
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  hotel   Hotel    @relation(fields: [hotelId], references: [id])
+  booking Booking? @relation(fields: [bookingId], references: [id])
+
+  @@index([userId])
+}
+
+// ── Booking, payments, CRM ──────────────────────────
+
+model Booking {
+  id               String        @id @default(uuid()) @db.Uuid
+  bookingNumber    String        @unique
+  type             BookingType
+  status           BookingStatus @default(INQUIRY)
+  customerId       String        @db.Uuid
+  vendorId         String?       @db.Uuid
+  eventId          String?       @db.Uuid
+  venueId          String?       @db.Uuid
+  venuePackageId   String?       @db.Uuid
+  listingId        String?       @db.Uuid
+  listingPackageId String?       @db.Uuid
+  carId            String?       @db.Uuid
+  accommodationId  String?       @db.Uuid
+  honeymoonId      String?       @db.Uuid
+  startAt          DateTime
+  endAt            DateTime?
+  guestCount       Int?
+  currency         String        @default("AED")
+  subtotalAmount   Decimal       @db.Decimal(12, 2)
+  commissionAmount Decimal       @default(0) @db.Decimal(12, 2)
+  depositAmount    Decimal       @default(0) @db.Decimal(12, 2)
+  balanceAmount    Decimal       @default(0) @db.Decimal(12, 2)
+  totalAmount      Decimal       @db.Decimal(12, 2)
+  notes            Json?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  deletedAt        DateTime?
+
+  customer         User                   @relation(fields: [customerId], references: [id])
+  vendor           Vendor?                @relation(fields: [vendorId], references: [id])
+  event            Event?                 @relation(fields: [eventId], references: [id])
+  venue            Venue?                 @relation(fields: [venueId], references: [id])
+  venuePackage     VenuePackage?          @relation(fields: [venuePackageId], references: [id])
+  listing          Listing?               @relation(fields: [listingId], references: [id])
+  listingPackage   ListingPackage?        @relation(fields: [listingPackageId], references: [id])
+  car              Car?                   @relation(fields: [carId], references: [id])
+  accommodation    Accommodation?         @relation(fields: [accommodationId], references: [id])
+  honeymoon        HoneymoonPackage?      @relation(fields: [honeymoonId], references: [id])
+  statusHistory    BookingStatusHistory[]
+  payments         Payment[]
+  invoices         Invoice[]
+  commissions      Commission[]
+  conversations    Conversation[]
+  flightBooking    FlightBooking?
+  hotelBooking     HotelBooking?
+  calls            Call[]
+
+  @@index([customerId, status])
+  @@index([vendorId, status])
+  @@index([type, startAt])
+}
+
+model BookingStatusHistory {
+  id         String        @id @default(uuid()) @db.Uuid
+  bookingId  String        @db.Uuid
+  fromStatus BookingStatus?
+  toStatus   BookingStatus
+  actorId    String?       @db.Uuid
+  reason     String?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  deletedAt  DateTime?
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  actor   User?   @relation(fields: [actorId], references: [id])
+
+  @@index([bookingId])
+}
+
+model VenueVisit {
+  id               String           @id @default(uuid()) @db.Uuid
+  customerId       String           @db.Uuid
+  venueId          String           @db.Uuid
+  eventId          String?          @db.Uuid
+  representativeId String?          @db.Uuid
+  scheduledAt      DateTime
+  status           VenueVisitStatus @default(REQUESTED)
+  notes            Json?
+  decision         Json?
+  decisionAt       DateTime?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  deletedAt        DateTime?
+
+  customer       User            @relation(fields: [customerId], references: [id])
+  venue          Venue           @relation(fields: [venueId], references: [id])
+  event          Event?          @relation(fields: [eventId], references: [id])
+  representative Representative? @relation(fields: [representativeId], references: [id])
+
+  @@index([venueId, scheduledAt])
+  @@index([customerId])
+  @@index([eventId])
+}
+
+model Favorite {
+  id           String               @id @default(uuid()) @db.Uuid
+  userId       String               @db.Uuid
+  resourceType FavoriteResourceType
+  resourceId   String               @db.Uuid
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  deletedAt    DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, resourceType, resourceId])
+}
+
+model Conversation {
+  id             String           @id @default(uuid()) @db.Uuid
+  type           ConversationType
+  participantAId String           @db.Uuid
+  participantBId String           @db.Uuid
+  bookingId      String?          @db.Uuid
+  lastMessageAt  DateTime?
+  aLastReadAt    DateTime?
+  bLastReadAt    DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  deletedAt      DateTime?
+
+  participantA User     @relation("ConversationParticipantA", fields: [participantAId], references: [id])
+  participantB User     @relation("ConversationParticipantB", fields: [participantBId], references: [id])
+  booking      Booking? @relation(fields: [bookingId], references: [id])
+  messages     Message[]
+
+  @@index([participantAId])
+  @@index([participantBId])
+}
+
+model Message {
+  id             String      @id @default(uuid()) @db.Uuid
+  conversationId String      @db.Uuid
+  senderId       String      @db.Uuid
+  type           MessageType @default(TEXT)
+  body           String
+  attachments    Json?
+  readAt         DateTime?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  deletedAt      DateTime?
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation(fields: [senderId], references: [id])
+
+  @@index([conversationId, createdAt])
+}
+
+model Notification {
+  id         String              @id @default(uuid()) @db.Uuid
+  userId     String              @db.Uuid
+  title      Json
+  body       Json
+  channel    NotificationChannel @default(IN_APP)
+  status     NotificationStatus  @default(PENDING)
+  data       Json?
+  sentAt     DateTime?
+  readAt     DateTime?
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
+  deletedAt  DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+}
+
+model Payment {
+  id              String          @id @default(uuid()) @db.Uuid
+  bookingId       String          @db.Uuid
+  userId          String          @db.Uuid
+  provider        PaymentProvider @default(STRIPE)
+  providerRef     String?         @unique
+  kind            PaymentKind     @default(DEPOSIT)
+  status          PaymentStatus   @default(PENDING)
+  amount          Decimal         @db.Decimal(12, 2)
+  currency        String          @default("AED")
+  rawPayload      Json?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  deletedAt       DateTime?
+
+  booking Booking @relation(fields: [bookingId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+  invoice Invoice?
+
+  @@index([bookingId])
+  @@index([userId])
+}
+
+model Invoice {
+  id             String        @id @default(uuid()) @db.Uuid
+  invoiceNumber  String        @unique
+  bookingId      String        @db.Uuid
+  paymentId      String?       @unique @db.Uuid
+  userId         String        @db.Uuid
+  status         InvoiceStatus @default(ISSUED)
+  subtotalAmount Decimal       @db.Decimal(12, 2)
+  vatRate        Decimal       @db.Decimal(5, 2)
+  vatAmount      Decimal       @db.Decimal(12, 2)
+  totalAmount    Decimal       @db.Decimal(12, 2)
+  currency       String        @default("AED")
+  taxId          String?
+  lines          Json
+  issuedAt       DateTime      @default(now())
+  erpExportedAt  DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  deletedAt      DateTime?
+
+  booking Booking  @relation(fields: [bookingId], references: [id])
+  payment Payment? @relation(fields: [paymentId], references: [id])
+  user    User     @relation(fields: [userId], references: [id])
+
+  @@index([bookingId])
+  @@index([userId, issuedAt])
+}
+
+model Payout {
+  id              String       @id @default(uuid()) @db.Uuid
+  vendorId        String       @db.Uuid
+  amount          Decimal      @db.Decimal(12, 2)
+  currency        String       @default("AED")
+  status          PayoutStatus @default(PENDING)
+  providerRef     String?
+  processedAt     DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  deletedAt       DateTime?
+
+  vendor Vendor @relation(fields: [vendorId], references: [id])
+
+  @@index([vendorId, status])
+}
+
+model Commission {
+  id         String           @id @default(uuid()) @db.Uuid
+  bookingId  String           @db.Uuid
+  vendorId   String           @db.Uuid
+  rate       Decimal          @db.Decimal(5, 2)
+  amount     Decimal          @db.Decimal(12, 2)
+  currency   String           @default("AED")
+  status     CommissionStatus @default(ACCRUED)
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+  deletedAt  DateTime?
+
+  booking Booking @relation(fields: [bookingId], references: [id])
+  vendor  Vendor  @relation(fields: [vendorId], references: [id])
+
+  @@index([vendorId])
+  @@index([bookingId])
+}
+
+model CrmNote {
+  id          String         @id @default(uuid()) @db.Uuid
+  authorId    String         @db.Uuid
+  subjectType CrmSubjectType
+  subjectId   String         @db.Uuid
+  body        String
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  deletedAt   DateTime?
+
+  author User @relation("CrmNoteAuthor", fields: [authorId], references: [id])
+
+  @@index([subjectType, subjectId])
+}
+
+model CrmInteraction {
+  id          String             @id @default(uuid()) @db.Uuid
+  actorId     String             @db.Uuid
+  subjectType CrmSubjectType
+  subjectId   String             @db.Uuid
+  type        CrmInteractionType
+  summary     String
+  metadata    Json?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  deletedAt   DateTime?
+
+  actor User @relation("CrmInteractionActor", fields: [actorId], references: [id])
+
+  @@index([subjectType, subjectId])
+}
+
+model Banner {
+  id         String          @id @default(uuid()) @db.Uuid
+  title      Json
+  subtitle   Json?
+  imageKey   String
+  linkUrl    String?
+  placement  BannerPlacement
+  sortOrder  Int             @default(0)
+  isActive   Boolean         @default(true)
+  startsAt   DateTime?
+  endsAt     DateTime?
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+  deletedAt  DateTime?
+
+  @@index([placement, isActive])
+}
+
+model Setting {
+  id         String    @id @default(uuid()) @db.Uuid
+  key        String    @unique
+  value      Json
+  group      String    @default("general")
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
+}
+
+model Call {
+  id           String     @id @default(uuid()) @db.Uuid
+  callerId     String     @db.Uuid
+  calleeId     String     @db.Uuid
+  bookingId    String?    @db.Uuid
+  channelName  String
+  status       CallStatus @default(RINGING)
+  callerUid    Int
+  calleeUid    Int
+  startedAt    DateTime?
+  endedAt      DateTime?
+  missedAt     DateTime?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  deletedAt    DateTime?
+
+  caller  User     @relation("CallCaller", fields: [callerId], references: [id])
+  callee  User     @relation("CallCallee", fields: [calleeId], references: [id])
+  booking Booking? @relation(fields: [bookingId], references: [id])
+
+  @@index([callerId, createdAt])
+  @@index([calleeId, createdAt])
+  @@index([status])
+}
+
+model CrmFollowUp {
+  id          String            @id @default(uuid()) @db.Uuid
+  ownerId     String            @db.Uuid
+  subjectType CrmSubjectType
+  subjectId   String            @db.Uuid
+  dueAt       DateTime
+  summary     String
+  status      CrmFollowUpStatus @default(OPEN)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  deletedAt   DateTime?
+
+  owner User @relation("CrmFollowUpOwner", fields: [ownerId], references: [id])
+
+  @@index([ownerId, status])
+  @@index([subjectType, subjectId])
+}
+
+model CommissionRate {
+  id         String    @id @default(uuid()) @db.Uuid
+  name       Json
+  rate       Decimal   @db.Decimal(5, 2)
+  bookingType BookingType?
+  isDefault  Boolean   @default(false)
+  isActive   Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
+
+  @@index([isActive, isDefault])
+}

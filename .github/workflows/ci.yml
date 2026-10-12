@@ -1,0 +1,149 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+env:
+  NODE_VERSION: "20"
+  PNPM_VERSION: "9.15.4"
+
+jobs:
+  api:
+    name: API (lint → typecheck → test → build)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: zaya
+          POSTGRES_PASSWORD: zaya_dev_password
+          POSTGRES_DB: zaya_events
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U zaya -d zaya_events"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    defaults:
+      run:
+        working-directory: apps/api
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://zaya:zaya_dev_password@localhost:5432/zaya_events?schema=public
+      REDIS_URL: redis://localhost:6379
+      JWT_ACCESS_SECRET: ci_access_secret_min_32_chars_xxxx
+      JWT_REFRESH_SECRET: ci_refresh_secret_min_32_chars_xxx
+      AGORA_APP_ID: "00000000000000000000000000000000"
+      AGORA_APP_CERTIFICATE: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+      STORAGE_DRIVER: local
+      STORAGE_PUBLIC_URL: http://localhost:4000
+      STORAGE_LOCAL_DIR: ./uploads
+      FLIGHTS_PROVIDER: mock
+      HOTELS_PROVIDER: mock
+      WHATSAPP_PROVIDER: mock
+      OPENAI_PROVIDER: mock
+      MAPS_PROVIDER: mock
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - name: Install
+        working-directory: .
+        run: pnpm install --frozen-lockfile=false
+      - name: Prisma generate + migrate
+        run: |
+          pnpm exec prisma generate
+          pnpm exec prisma migrate deploy
+      - name: Lint
+        working-directory: .
+        run: pnpm --filter @zaya/api lint
+      - name: Typecheck
+        working-directory: .
+        run: pnpm --filter @zaya/api typecheck
+      - name: Test
+        working-directory: .
+        run: pnpm --filter @zaya/api test
+      - name: Build
+        working-directory: .
+        run: pnpm --filter @zaya/api build
+
+  admin-web:
+    name: Admin web (lint → typecheck → test → build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile=false
+      - run: pnpm --filter @zaya/admin-web lint
+      - run: pnpm --filter @zaya/admin-web typecheck
+      - name: Test
+        run: echo "Admin web has no unit test runner; typecheck covers the app."
+      - run: pnpm --filter @zaya/admin-web build
+
+  vendor-web:
+    name: Vendor web (lint → typecheck → test → build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile=false
+      - run: pnpm --filter @zaya/vendor-web lint
+      - run: pnpm --filter @zaya/vendor-web typecheck
+      - name: Test
+        run: echo "Vendor web has no unit test runner; typecheck covers the app."
+      - run: pnpm --filter @zaya/vendor-web build
+
+  mobile:
+    name: Mobile (lint → typecheck → test → build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Lint
+        run: flutter analyze
+      - name: Typecheck
+        run: dart analyze
+      - name: Test
+        run: flutter test
+      - name: Build
+        run: flutter build apk --debug

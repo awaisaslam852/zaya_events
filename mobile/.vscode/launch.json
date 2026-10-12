@@ -1,0 +1,19 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Zaya mobile (iOS simulator)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "args": ["--dart-define=API_BASE_URL=http://127.0.0.1:4000/api/v1"]
+    },
+    {
+      "name": "Zaya mobile (Android emulator)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "args": ["--dart-define=API_BASE_URL=http://10.0.2.2:4000/api/v1"]
+    }
+  ]
+}

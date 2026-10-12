@@ -1,0 +1,1 @@
+ALTER TABLE "EventCategory" ADD COLUMN IF NOT EXISTS "customFields" JSONB NOT NULL DEFAULT '[]';

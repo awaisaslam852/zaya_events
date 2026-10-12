@@ -1,0 +1,12 @@
+node_modules
+dist
+.git
+.env
+uploads
+**/.dart_tool
+**/build
+mobile/ios
+mobile/android
+ios
+android
+.idea
