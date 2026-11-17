@@ -8,7 +8,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 type Earnings = {
   totals: { total: number; deposits: number; balances: number };
   bookings: Array<{ id: string; bookingNumber: string; status: string; totalAmount: string; depositAmount: string; balanceAmount: string }>;
-  payouts: Array<{ id: string; amount: string; currency: string; status: string; createdAt: string }>;
 };
 
 export function EarningsPage() {
@@ -21,7 +20,7 @@ export function EarningsPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-3xl font-extrabold tracking-tight text-[#003580]">{t('nav.earnings')}</h1>
+      <h1 className="text-2xl font-extrabold tracking-tight text-[#003580] sm:text-3xl">{t('nav.earnings')}</h1>
       <p className="text-sm text-muted-foreground">{t('earnings.hint')}</p>
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
@@ -59,23 +58,6 @@ export function EarningsPage() {
               </TableCell>
               <TableCell>{money(b.depositAmount)}</TableCell>
               <TableCell>{money(b.balanceAmount)}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-      <h2 className="font-semibold">{t('earnings.history')}</h2>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>{t('common.price')}</TableHead>
-            <TableHead>{t('common.status')}</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {(e?.payouts ?? []).map((p) => (
-            <TableRow key={p.id}>
-              <TableCell>{money(p.amount, p.currency)}</TableCell>
-              <TableCell>{p.status}</TableCell>
             </TableRow>
           ))}
         </TableBody>

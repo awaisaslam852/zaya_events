@@ -34,9 +34,9 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="brand-hero rounded-2xl p-6 text-white shadow-lg">
+      <div className="brand-hero rounded-2xl p-4 text-white shadow-lg sm:p-6">
         <p className="text-xs font-semibold uppercase tracking-widest text-[#FEBB02]">Tonight’s occupancy</p>
-        <h1 className="mt-1 text-3xl font-extrabold">{name}</h1>
+        <h1 className="mt-1 text-2xl font-extrabold sm:text-3xl">{name}</h1>
         <p className="mt-2 max-w-xl text-sm text-white/80">Review requests, keep availability fresh, and message guests — the same flow customers use in the app.</p>
         <div className="mt-4 flex flex-wrap gap-2">
           <Button asChild variant="cta">
@@ -50,14 +50,14 @@ export function DashboardPage() {
       {me.data?.status && me.data.status !== 'APPROVED' ? (
         <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm">{t('dashboard.pending')} ({me.data.status})</p>
       ) : null}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
         <Kpi title={t('dashboard.bookings')} value={String(bookings.data?.total ?? 0)} />
         <Kpi title={t('dashboard.upcoming')} value={String(upcoming.length)} />
         <Kpi title={t('dashboard.requests')} value={String((requests.data?.total ?? 0) + (visits.data?.total ?? 0))} />
         <Kpi title={t('dashboard.earnings')} value={money(earnings.data?.totals.total)} />
       </div>
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2">
           <CardTitle>Latest reservations</CardTitle>
           <Button asChild variant="outline" size="sm">
             <Link to="/bookings">View all</Link>
@@ -92,7 +92,7 @@ function Kpi({ title, value }: { title: string; value: string }) {
       <CardHeader className="p-4 pb-2">
         <CardTitle className="text-sm text-muted-foreground">{title}</CardTitle>
       </CardHeader>
-      <CardContent className="p-4 pt-0 text-2xl font-extrabold text-[#003580]">{value}</CardContent>
+      <CardContent className="break-words p-4 pt-0 text-xl font-extrabold text-[#003580] sm:text-2xl">{value}</CardContent>
     </Card>
   );
 }

@@ -31,3 +31,15 @@ export function requireRole(...roles: Array<RoleName | Role>) {
     next();
   };
 }
+
+export function requireSuperAdmin(req: Request, _res: Response, next: NextFunction): void {
+  if (!req.user) {
+    next(new UnauthorizedError());
+    return;
+  }
+  if (req.user.role !== Role.ADMIN || !req.user.isSuperAdmin) {
+    next(new ForbiddenError('Only the main administrator can do this'));
+    return;
+  }
+  next();
+}

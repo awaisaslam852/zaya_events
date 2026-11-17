@@ -11,6 +11,9 @@ class SocketService {
   io.Socket? chat;
   io.Socket? calls;
   final List<VoidCallback> onConnected = [];
+  var _callsReady = false;
+
+  bool get callsConnected => calls?.connected == true || _callsReady;
 
   String get _origin {
     final uri = Uri.parse(_config.apiBaseUrl);
@@ -22,26 +25,49 @@ class SocketService {
     if (token == null) {
       return;
     }
+    await disconnect();
     chat = _open('/chat', token);
     calls = _open('/calls', token);
-    for (final hook in onConnected) {
+    calls?.on('connect', (_) {
+      _callsReady = true;
+      _notifyConnected();
+    });
+    calls?.on('calls:ready', (_) {
+      _callsReady = true;
+      _notifyConnected();
+    });
+    if (calls?.connected == true) {
+      _callsReady = true;
+      _notifyConnected();
+    }
+  }
+
+  void _notifyConnected() {
+    for (final hook in List<VoidCallback>.from(onConnected)) {
       hook();
     }
   }
 
   io.Socket _open(String nsp, String token) {
-    return io.io(
+    final socket = io.io(
       '$_origin$nsp',
       io.OptionBuilder()
           .setTransports(['websocket'])
           .setAuth({'token': token})
-          .enableAutoConnect()
+          .setQuery({'token': token})
+          .enableForceNew()
+          .disableAutoConnect()
           .enableReconnection()
+          .setReconnectionAttempts(99)
+          .setReconnectionDelay(1000)
           .build(),
     );
+    socket.connect();
+    return socket;
   }
 
   Future<void> disconnect() async {
+    _callsReady = false;
     chat?.dispose();
     calls?.dispose();
     chat = null;

@@ -38,7 +38,22 @@ class _FakeVenuesRepository implements VenuesRepository {
   }
 }
 
+class _SlowVenuesRepository extends _FakeVenuesRepository {
+  @override
+  Future<Either<Failure, Paginated<VenuesItem>>> list({int page = 1, Map<String, dynamic>? query}) async {
+    await Future<void>.delayed(const Duration(milliseconds: 40));
+    return super.list(page: page, query: query);
+  }
+}
+
 void main() {
+  test('closing VenuesCubit during load does not throw', () async {
+    final cubit = VenuesCubit(ListVenues(_SlowVenuesRepository()), GetVenues(_SlowVenuesRepository()));
+    final pending = cubit.load();
+    await cubit.close();
+    await expectLater(pending, completes);
+  });
+
   testWidgets('venue list renders localized titles', (tester) async {
     final cubit = VenuesCubit(ListVenues(_FakeVenuesRepository()), GetVenues(_FakeVenuesRepository()));
     await cubit.load();

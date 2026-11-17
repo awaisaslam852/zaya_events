@@ -1,8 +1,8 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:zaya_events/core/bloc/safe_cubit.dart';
 import '../../domain/usecases/honeymoon_usecases.dart';
 import 'honeymoon_state.dart';
 
-class HoneymoonCubit extends Cubit<HoneymoonState> {
+class HoneymoonCubit extends SafeCubit<HoneymoonState> {
   HoneymoonCubit(this._list, this._get) : super(const HoneymoonState());
 
   final ListHoneymoon _list;

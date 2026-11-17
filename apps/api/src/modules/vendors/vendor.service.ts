@@ -1,9 +1,13 @@
 import bcrypt from 'bcryptjs';
 import { Role, UserStatus, VendorStatus, type Prisma } from '@prisma/client';
 import { env } from '../../config/env.js';
+import { writeAdminAudit } from '../../lib/admin-audit.js';
+import { adminScope, assignableCountry, assertCountryAllowed, countryWhere } from '../../lib/admin-scope.js';
+import type { AuthUser } from '../../middleware/auth.js';
 import { ConflictError, ForbiddenError, NotFoundError } from '../../lib/errors.js';
 import { notDeleted, paginated, skipTake } from '../../lib/common.js';
 import { prisma } from '../../lib/prisma.js';
+import { reviewService } from '../reviews/review.service.js';
 import { authRepository } from '../auth/auth.repository.js';
 import { notificationService } from '../notifications/notification.service.js';
 import { vendorRepository } from './vendor.repository.js';
@@ -11,11 +15,13 @@ import type { z } from 'zod';
 import type { vendorAdminCreateSchema, vendorApplySchema, vendorListQuery, vendorProfilePatch } from './vendor.schema.js';
 
 export const vendorService = {
-  async list(role: Role, query: z.infer<typeof vendorListQuery>) {
+  async list(role: Role, query: z.infer<typeof vendorListQuery>, actor?: AuthUser) {
     const { skip, take } = skipTake(query);
     const where: Prisma.VendorWhereInput = {
       ...notDeleted,
+      ...countryWhere(adminScope(actor)),
       ...(query.status ? { status: query.status } : role === Role.ADMIN ? {} : { status: VendorStatus.APPROVED }),
+      ...(role !== Role.ADMIN && query.country ? { country: query.country } : {}),
       ...(query.city ? { city: query.city } : {}),
       ...(query.q
         ? {
@@ -32,10 +38,13 @@ export const vendorService = {
     const [items, total] = await vendorRepository.list(where, skip, take);
     return paginated(items, total, query);
   },
-  async get(id: string) {
+  async get(id: string, actor?: AuthUser) {
     const row = await vendorRepository.findById(id);
     if (!row) {
       throw new NotFoundError('Vendor not found');
+    }
+    if (actor?.role === Role.ADMIN) {
+      assertCountryAllowed(adminScope(actor), row.country);
     }
     return row;
   },
@@ -115,11 +124,13 @@ export const vendorService = {
       select: { id: true, name: true, ratingAvg: true, ratingCount: true },
       orderBy: { ratingCount: 'desc' },
     });
+    const incoming = await reviewService.forVendor(userId);
     return {
-      ratingAvg: vendor.ratingAvg,
-      ratingCount: vendor.ratingCount,
+      ratingAvg: incoming.ratingAvg,
+      ratingCount: incoming.ratingCount,
       listings,
       venues,
+      items: incoming.items,
     };
   },
   async apply(userId: string, input: z.infer<typeof vendorApplySchema>) {
@@ -141,13 +152,25 @@ export const vendorService = {
       status: VendorStatus.PENDING,
     });
   },
-  async updateProfile(userId: string, role: Role, vendorId: string | undefined, input: z.infer<typeof vendorProfilePatch>) {
+  async updateProfile(
+    userId: string,
+    role: Role,
+    vendorId: string | undefined,
+    input: z.infer<typeof vendorProfilePatch>,
+    actor?: AuthUser,
+  ) {
     const vendor =
       role === Role.ADMIN && vendorId
         ? await vendorRepository.findById(vendorId)
         : await vendorRepository.findByUserId(userId);
     if (!vendor) {
       throw new NotFoundError('Vendor profile not found');
+    }
+    if (role === Role.ADMIN) {
+      assertCountryAllowed(adminScope(actor), vendor.country);
+      if (input.country) {
+        assignableCountry(adminScope(actor), input.country);
+      }
     }
     if (role !== Role.ADMIN && (input.commissionRate !== undefined || input.status !== undefined)) {
       throw new ForbiddenError('Commission rate can only be changed by admin');
@@ -173,8 +196,8 @@ export const vendorService = {
       ...(notificationPrefs ? { notificationPrefs: notificationPrefs as Prisma.InputJsonValue } : {}),
     });
   },
-  async approve(id: string) {
-    const vendor = await this.get(id);
+  async approve(id: string, actor?: AuthUser) {
+    const vendor = await this.get(id, actor);
     const updated = await vendorRepository.update(id, { status: VendorStatus.APPROVED });
     await notificationService.notify({
       userId: vendor.userId,
@@ -182,14 +205,25 @@ export const vendorService = {
       body: { en: 'Your vendor account is approved.', ar: 'تمت الموافقة على حساب المورد الخاص بك.' },
       data: { type: 'vendor_approved', vendorId: id },
     });
+    if (actor) {
+      await writeAdminAudit({
+        actorId: actor.id,
+        action: 'vendor.approve',
+        entityType: 'Vendor',
+        entityId: id,
+        country: vendor.country,
+      });
+    }
     return updated;
   },
-  async createByAdmin(input: z.infer<typeof vendorAdminCreateSchema>) {
+  async createByAdmin(input: z.infer<typeof vendorAdminCreateSchema>, actor?: AuthUser) {
     const existing = await authRepository.findActiveByEmail(input.email);
     if (existing) {
       throw new ConflictError('An account with this email already exists');
     }
     const passwordHash = await bcrypt.hash(input.password, env.BCRYPT_ROUNDS);
+    const businessName = input.businessName;
+    const country = assignableCountry(adminScope(actor), input.country) ?? input.country;
     const user = await authRepository.createVendor({
       email: input.email,
       passwordHash,
@@ -197,22 +231,21 @@ export const vendorService = {
       lastName: input.lastName,
       phone: input.phone,
       locale: input.locale,
-      country: input.country,
+      country,
       city: input.city,
-      legalName: input.legalName,
-      taxId: input.taxId,
-      website: input.website || undefined,
-      businessName: input.businessName,
+      legalName: input.legalName?.trim() || businessName.en,
+      website: input.website,
+      businessName,
       description: input.description ?? { en: '', ar: '' },
       approved: true,
     });
     if (!user.vendor) {
       throw new NotFoundError('Vendor profile not found');
     }
-    return this.get(user.vendor.id);
+    return this.get(user.vendor.id, actor);
   },
-  async remove(id: string) {
-    const vendor = await this.get(id);
+  async remove(id: string, actor?: AuthUser) {
+    const vendor = await this.get(id, actor);
     await vendorRepository.update(id, { deletedAt: new Date(), status: VendorStatus.SUSPENDED });
     await prisma.user.update({
       where: { id: vendor.userId },
@@ -221,8 +254,8 @@ export const vendorService = {
     await authRepository.revokeAllRefreshTokens(vendor.userId);
     return { deleted: true };
   },
-  async reject(id: string, reason?: string) {
-    const vendor = await this.get(id);
+  async reject(id: string, reason?: string, actor?: AuthUser) {
+    const vendor = await this.get(id, actor);
     const updated = await vendorRepository.update(id, { status: VendorStatus.REJECTED });
     await notificationService.notify({
       userId: vendor.userId,

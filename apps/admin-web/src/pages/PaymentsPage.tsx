@@ -47,7 +47,7 @@ export function PaymentsPage() {
     <div>
       <ListToolbar
         title={t('nav.payments')}
-        subtitle="Deposits, balances, and refunds tied to bookings."
+        subtitle={t('pages.payments')}
         search={q}
         onSearch={(v) => {
           setQ(v);
@@ -65,7 +65,7 @@ export function PaymentsPage() {
         <TableHeader>
           <TableRow>
             <TableHead>#</TableHead>
-            <TableHead>kind</TableHead>
+            <TableHead>{t('common.kind')}</TableHead>
             <TableHead>{t('common.status')}</TableHead>
             <TableHead>{t('common.price')}</TableHead>
             <TableHead>{t('common.actions')}</TableHead>

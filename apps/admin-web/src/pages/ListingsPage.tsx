@@ -44,7 +44,7 @@ export function ListingsPage() {
     <div>
       <ListToolbar
         title={t('nav.listings')}
-        subtitle="All vendor service listings — photos, prices, and publish control."
+        subtitle={t('pages.listings')}
         search={q}
         onSearch={setQ}
         page={page}

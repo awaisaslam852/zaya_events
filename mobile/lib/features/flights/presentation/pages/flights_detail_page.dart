@@ -29,6 +29,7 @@ class FlightsDetailPage extends StatelessWidget {
     return BlocProvider(
       create: (_) => sl<FlightsCubit>()..loadOne(id),
       child: Scaffold(
+        backgroundColor: AppTheme.canvas,
         body: BlocBuilder<FlightsCubit, FlightsState>(
           builder: (context, state) {
             final item = state.detail;

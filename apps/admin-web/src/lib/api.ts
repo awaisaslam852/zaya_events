@@ -1,8 +1,11 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
-import { clearSession, getAccessToken, getRefreshToken, setSession } from './auth';
+import { clearSession, getAccessToken, getDeskCountry, getRefreshToken, isSuperAdmin, setSession } from './auth';
 
 export type ApiSuccess<T> = { success: true; data: T };
-export type ApiFailure = { success: false; error: { code: string; message: string } };
+export type ApiFailure = {
+  success: false;
+  error: { code: string; message: string; details?: { fieldErrors?: Record<string, string[] | undefined> } };
+};
 export type Paginated<T> = {
   items: T[];
   total: number;
@@ -20,6 +23,12 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  const desk = getDeskCountry();
+  if (desk && isSuperAdmin()) {
+    config.headers['X-Admin-Country'] = desk;
+  }
+  const lng = localStorage.getItem('zaya.admin.lng') ?? 'en';
+  config.headers['Accept-Language'] = lng.startsWith('ar') ? 'ar' : 'en';
   return config;
 });
 
@@ -31,7 +40,7 @@ async function refreshAccess(): Promise<string | null> {
     return null;
   }
   const { data } = await axios.post<
-    ApiSuccess<{ tokens: { accessToken: string; refreshToken: string }; user: { id: string; email: string; role: string; firstName: string; lastName: string } }>
+    ApiSuccess<{ tokens: { accessToken: string; refreshToken: string }; user: import('./auth').AdminSessionUser }>
   >(`${import.meta.env.VITE_API_URL ?? 'http://localhost:4000'}/api/v1/auth/refresh`, { refreshToken });
   if (!data.success || data.data.user.role !== 'ADMIN') {
     clearSession();
@@ -65,10 +74,29 @@ api.interceptors.response.use(
   },
 );
 
+function formatApiError(error: ApiFailure['error']): string {
+  const fields = error.details?.fieldErrors
+    ? Object.entries(error.details.fieldErrors)
+        .flatMap(([key, messages]) => (messages ?? []).map((message) => `${key}: ${message}`))
+        .join('; ')
+    : '';
+  return fields ? `${error.message} (${fields})` : error.message;
+}
+
 export async function unwrap<T>(promise: Promise<{ data: ApiSuccess<T> | ApiFailure }>): Promise<T> {
-  const { data } = await promise;
-  if (!data.success) {
-    throw new Error(data.error.message);
+  try {
+    const { data } = await promise;
+    if (!data.success) {
+      throw new Error(formatApiError(data.error));
+    }
+    return data.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const body = error.response?.data as ApiFailure | undefined;
+      if (body && body.success === false && body.error) {
+        throw new Error(formatApiError(body.error));
+      }
+    }
+    throw error;
   }
-  return data.data;
 }

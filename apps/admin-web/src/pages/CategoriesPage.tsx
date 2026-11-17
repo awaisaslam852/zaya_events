@@ -122,7 +122,7 @@ export function CategoriesPage({ kind }: { kind: 'event' | 'service' }) {
     <div>
       <ListToolbar
         title={t(kind === 'event' ? 'nav.eventCategories' : 'nav.serviceCategories')}
-        subtitle="Names, slugs, and custom fields used on the customer app."
+        subtitle={t('pages.categories')}
         search={q}
         onSearch={(v) => {
           setQ(v);

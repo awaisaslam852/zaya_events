@@ -9,7 +9,7 @@ export const carController = {
     sendSuccess(res, await carService.list(req.query as unknown as z.infer<typeof carListQuery>, req.user));
   }),
   get: handle(async (req, res) => {
-    sendSuccess(res, await carService.get(String(req.params.id)));
+    sendSuccess(res, await carService.get(String(req.params.id), req.user));
   }),
   calendar: handle(async (req, res) => {
     const from = typeof req.query.from === 'string' ? new Date(req.query.from) : undefined;
@@ -21,13 +21,13 @@ export const carController = {
   }),
   update: handle(async (req, res) => {
     const user = actor(req);
-    sendSuccess(res, await carService.update(user.id, user.role, String(req.params.id), req.body as z.infer<typeof carPatch>));
+    sendSuccess(res, await carService.update(user.id, user.role, String(req.params.id), req.body as z.infer<typeof carPatch>, user));
   }),
   book: handle(async (req, res) => {
     sendSuccess(res, await carService.book(actor(req).id, String(req.params.id), req.body as z.infer<typeof carBookSchema>), 201);
   }),
   remove: handle(async (req, res) => {
     const user = actor(req);
-    sendSuccess(res, await carService.remove(user.id, user.role, String(req.params.id)));
+    sendSuccess(res, await carService.remove(user.id, user.role, String(req.params.id), user));
   }),
 };

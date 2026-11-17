@@ -9,7 +9,7 @@ export const honeymoonController = {
     sendSuccess(res, await honeymoonService.list(req.query as unknown as z.infer<typeof honeymoonListQuery>, req.user));
   }),
   get: handle(async (req, res) => {
-    sendSuccess(res, await honeymoonService.get(String(req.params.id)));
+    sendSuccess(res, await honeymoonService.get(String(req.params.id), req.user));
   }),
   create: handle(async (req, res) => {
     sendSuccess(res, await honeymoonService.create(actor(req).id, req.body as z.infer<typeof honeymoonBody>), 201);
@@ -18,7 +18,7 @@ export const honeymoonController = {
     const user = actor(req);
     sendSuccess(
       res,
-      await honeymoonService.update(user.id, user.role, String(req.params.id), req.body as z.infer<typeof honeymoonPatch>),
+      await honeymoonService.update(user.id, user.role, String(req.params.id), req.body as z.infer<typeof honeymoonPatch>, user),
     );
   }),
   inquire: handle(async (req, res) => {
@@ -34,6 +34,6 @@ export const honeymoonController = {
   }),
   remove: handle(async (req, res) => {
     const user = actor(req);
-    sendSuccess(res, await honeymoonService.remove(user.id, user.role, String(req.params.id)));
+    sendSuccess(res, await honeymoonService.remove(user.id, user.role, String(req.params.id), user));
   }),
 };

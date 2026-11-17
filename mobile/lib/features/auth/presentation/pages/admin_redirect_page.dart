@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/config/app_config.dart';
 import '../../../../core/di/injection.dart';
+import '../../../../core/widgets/zaya_dialogs.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
@@ -29,7 +30,13 @@ class AdminRedirectPage extends StatelessWidget {
               child: Text(l10n.openAdmin),
             ),
             TextButton(
-              onPressed: () => sl<AuthBloc>().add(const AuthEvent.logout()),
+              onPressed: () async {
+                final ok = await showZayaLogoutConfirm(context);
+                if (!ok || !context.mounted) {
+                  return;
+                }
+                sl<AuthBloc>().add(const AuthEvent.logout());
+              },
               child: Text(l10n.logout),
             ),
           ],

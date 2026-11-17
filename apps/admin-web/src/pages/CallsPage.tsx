@@ -42,12 +42,12 @@ export function CallsPage() {
 
   return (
     <div className="space-y-4">
-      <ListToolbar title={t('nav.calls')} subtitle="Voice sessions between guests and partners — observe when needed." search={q} onSearch={(v) => { setQ(v); setPage(1); }} page={page} pageCount={list.data?.pageCount ?? 1} onPage={setPage} />
+      <ListToolbar title={t('nav.calls')} subtitle={t('pages.calls')} search={q} onSearch={(v) => { setQ(v); setPage(1); }} page={page} pageCount={list.data?.pageCount ?? 1} onPage={setPage} />
       <TableShell>
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>channel</TableHead>
+            <TableHead>{t('common.channel')}</TableHead>
             <TableHead>{t('common.status')}</TableHead>
             <TableHead>{t('common.actions')}</TableHead>
           </TableRow>
@@ -104,7 +104,7 @@ function ObserverJoin({ rtc }: { rtc: Rtc }) {
     <div className="grid gap-2 md:grid-cols-2">
       {remotes.map((user) => (
         <div key={String(user.uid)} className="overflow-hidden rounded bg-black">
-          <RemoteUser user={user} playVideo playAudio />
+          <RemoteUser user={user} playVideo={false} playAudio />
         </div>
       ))}
     </div>

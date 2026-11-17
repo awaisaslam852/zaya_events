@@ -1,9 +1,13 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/di/injection.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/localized.dart';
 import '../../../../core/widgets/async_body.dart';
-import '../../../../core/widgets/json_title.dart';
+import '../../../../core/widgets/property_card.dart';
+import '../../../../core/widgets/screen_header.dart';
 import '../../../../core/widgets/zaya_fields.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../cubit/hotels_cubit.dart';
@@ -25,13 +29,9 @@ class HotelsListPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
     return BlocProvider(
       create: (_) => sl<HotelsCubit>()..load(query: defaultQuery()),
-      child: Scaffold(
-        appBar: embedded ? null : AppBar(title: Text(l10n.hotels)),
-        body: const _HotelsSearchBody(),
-      ),
+      child: const _HotelsSearchBody(),
     );
   }
 }
@@ -94,55 +94,135 @@ class _HotelsSearchBodyState extends State<_HotelsSearchBody> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            children: [
-              ZayaTextField(controller: _city, label: l10n.city, icon: Icons.location_city_outlined),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(l10n.checkIn),
-                subtitle: Text(_checkIn.toIso8601String().split('T').first),
-                onTap: () => _pick(true),
-              ),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(l10n.checkOut),
-                subtitle: Text(_checkOut.toIso8601String().split('T').first),
-                onTap: () => _pick(false),
-              ),
-              ZayaPrimaryButton(label: l10n.search, icon: Icons.hotel_outlined, onPressed: _search),
-            ],
-          ),
-        ),
-        Expanded(
-          child: BlocBuilder<HotelsCubit, HotelsState>(
-            builder: (context, state) {
-              return AsyncBody(
-                loading: state.loading,
-                error: state.error,
-                empty: state.items.isEmpty,
-                onRetry: _search,
-                child: ListView.separated(
-                  itemCount: state.items.length,
-                  separatorBuilder: (_, _) => const Divider(height: 1),
-                  itemBuilder: (context, index) {
-                    final item = state.items[index];
-                    final title = item.raw['title'] ?? item.raw['name'] ?? item.raw['businessName'] ?? item.id;
-                    return ListTile(
-                      title: JsonTitle(title),
-                      subtitle: Text(item.raw['city']?.toString() ?? item.raw['status']?.toString() ?? ''),
-                      onTap: () => context.push('/hotels/${item.id}'),
-                    );
-                  },
+    return Scaffold(
+      backgroundColor: AppTheme.canvas,
+      body: Column(
+        children: [
+          ScreenHeader(showBack: true, eyebrow: l10n.travel, title: l10n.hotels, subtitle: l10n.hotelsSubtitle),
+          Expanded(
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  child: Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: AppTheme.line),
+                    ),
+                    child: Column(
+                      children: [
+                        ZayaTextField(controller: _city, label: l10n.city, icon: Icons.location_city_outlined),
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: const Icon(Icons.login, color: AppTheme.navy),
+                          title: Text(l10n.checkIn),
+                          subtitle: Text(_checkIn.toIso8601String().split('T').first),
+                          onTap: () => _pick(true),
+                        ),
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: const Icon(Icons.nights_stay_outlined, color: AppTheme.navy),
+                          title: Text(l10n.checkOut),
+                          subtitle: Text(_checkOut.toIso8601String().split('T').first),
+                          onTap: () => _pick(false),
+                        ),
+                        ZayaPrimaryButton(label: l10n.search, icon: Icons.hotel_outlined, onPressed: _search),
+                      ],
+                    ),
+                  ),
                 ),
-              );
-            },
+                Expanded(
+                  child: BlocBuilder<HotelsCubit, HotelsState>(
+                    builder: (context, state) {
+                      return AsyncBody(
+                        loading: state.loading,
+                        error: state.error,
+                        empty: state.items.isEmpty,
+                        emptyIcon: Icons.apartment_outlined,
+                        emptyTitle: l10n.empty,
+                        emptyMessage: l10n.hotelsSubtitle,
+                        onRetry: _search,
+                        child: ListView.separated(
+                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+                          itemCount: state.items.length,
+                          separatorBuilder: (_, _) => const SizedBox(height: 12),
+                          itemBuilder: (context, index) {
+                            final item = state.items[index];
+                            final locale = Localizations.localeOf(context).languageCode;
+                            final image = catalogImageUrl(item.raw);
+                            final city = item.raw['city']?.toString() ?? '';
+                            return Material(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              child: InkWell(
+                                onTap: () => context.push('/hotels/${item.id}'),
+                                borderRadius: BorderRadius.circular(20),
+                                child: Ink(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(color: AppTheme.line),
+                                    boxShadow: AppTheme.cardShadow,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      ClipRRect(
+                                        borderRadius: const BorderRadius.horizontal(left: Radius.circular(20)),
+                                        child: SizedBox(
+                                          width: 108,
+                                          height: 108,
+                                          child: image == null
+                                              ? const ColoredBox(
+                                                  color: AppTheme.wash,
+                                                  child: Icon(Icons.apartment, color: AppTheme.navy, size: 32),
+                                                )
+                                              : CachedNetworkImage(imageUrl: image, fit: BoxFit.cover),
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: Padding(
+                                          padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                localized(item.raw['title'] ?? item.raw['name'], locale),
+                                                maxLines: 2,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+                                              ),
+                                              if (city.isNotEmpty) ...[
+                                                const SizedBox(height: 4),
+                                                Text(city, style: const TextStyle(color: AppTheme.muted, fontSize: 12)),
+                                              ],
+                                              if (item.raw['starRating'] != null) ...[
+                                                const SizedBox(height: 8),
+                                                Text(
+                                                  '★ ${item.raw['starRating']}',
+                                                  style: const TextStyle(color: AppTheme.navy, fontWeight: FontWeight.w800),
+                                                ),
+                                              ],
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

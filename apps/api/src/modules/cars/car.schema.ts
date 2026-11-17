@@ -4,6 +4,7 @@ import { localizedString, paginationQuerySchema } from '../../lib/common.js';
 
 export const carListQuery = paginationQuerySchema.extend({
   city: z.string().optional(),
+  country: z.string().length(2).optional(),
   seats: z.coerce.number().int().optional(),
   q: z.string().optional(),
   vendorId: z.string().uuid().optional(),
@@ -21,7 +22,7 @@ export const carBody = z.object({
   plateNumber: z.string().optional(),
   dailyRate: z.coerce.number().nonnegative(),
   currency: z.string().length(3).default('AED'),
-  coverKey: z.string().optional(),
+  coverKey: z.string().nullish(),
   galleryKeys: z.array(z.string()).optional().default([]),
   isPublished: z.boolean().default(true),
 });

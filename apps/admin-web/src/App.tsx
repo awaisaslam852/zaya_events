@@ -2,7 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 import { queryClient } from '@/lib/query';
-import { RequireAdmin } from '@/components/RequireAdmin';
+import { RequireAdmin, RequireSuperAdmin } from '@/components/RequireAdmin';
 import { LoginPage } from '@/pages/LoginPage';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { CustomersPage } from '@/pages/CustomersPage';
@@ -36,6 +36,8 @@ import { CallsPage } from '@/pages/CallsPage';
 import { BannersPage } from '@/pages/BannersPage';
 import { NotificationsPage } from '@/pages/NotificationsPage';
 import { SettingsPage } from '@/pages/SettingsPage';
+import { StaffPage } from '@/pages/StaffPage';
+import { StaffDetailPage } from '@/pages/StaffDetailPage';
 
 export function App(): JSX.Element {
   return (
@@ -59,8 +61,10 @@ export function App(): JSX.Element {
             <Route path="/cars/:id" element={<CarDetailPage />} />
             <Route path="/honeymoon" element={<HoneymoonPage />} />
             <Route path="/honeymoon/:id" element={<HoneymoonDetailPage />} />
-            <Route path="/event-categories" element={<EventCategoriesPage />} />
-            <Route path="/service-categories" element={<ServiceCategoriesPage />} />
+            <Route path="/staff" element={<RequireSuperAdmin><StaffPage /></RequireSuperAdmin>} />
+            <Route path="/staff/:id" element={<RequireSuperAdmin><StaffDetailPage /></RequireSuperAdmin>} />
+            <Route path="/event-categories" element={<RequireSuperAdmin><EventCategoriesPage /></RequireSuperAdmin>} />
+            <Route path="/service-categories" element={<RequireSuperAdmin><ServiceCategoriesPage /></RequireSuperAdmin>} />
             <Route path="/bookings" element={<BookingsPage />} />
             <Route path="/bookings/:id" element={<BookingDetailPage />} />
             <Route path="/venue-visits" element={<VenueVisitsPage />} />
@@ -72,9 +76,9 @@ export function App(): JSX.Element {
             <Route path="/messages" element={<MessagesPage />} />
             <Route path="/reports" element={<ReportsPage />} />
             <Route path="/calls" element={<CallsPage />} />
-            <Route path="/banners" element={<BannersPage />} />
-            <Route path="/notifications" element={<NotificationsPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/banners" element={<RequireSuperAdmin><BannersPage /></RequireSuperAdmin>} />
+            <Route path="/notifications" element={<RequireSuperAdmin><NotificationsPage /></RequireSuperAdmin>} />
+            <Route path="/settings" element={<RequireSuperAdmin><SettingsPage /></RequireSuperAdmin>} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

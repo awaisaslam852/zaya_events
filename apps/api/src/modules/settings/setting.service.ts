@@ -2,7 +2,7 @@ import { Prisma } from '@prisma/client';
 import { NotFoundError } from '../../lib/errors.js';
 import { integrationsConfig } from '../../integrations/config.js';
 import { env } from '../../config/env.js';
-import { APP_CURRENCIES, COUNTRIES } from '../../lib/countries.js';
+import { APP_CURRENCIES, COUNTRIES, currencyForCountry } from '../../lib/countries.js';
 import { settingRepository } from './setting.repository.js';
 import type { z } from 'zod';
 import type { settingBody, settingListQuery, settingPatch } from './setting.schema.js';
@@ -50,19 +50,21 @@ export const settingService = {
       ...(input.value !== undefined ? { value: input.value as Prisma.InputJsonValue } : {}),
     });
   },
-  async public() {
+  async public(country?: string) {
     const [currencyRow, legacyCurrency, siteRow, platformName] = await Promise.all([
       settingRepository.findByKey('general.currency'),
       settingRepository.findByKey('platform.defaultCurrency'),
       settingRepository.findByKey('general.siteName'),
       settingRepository.findByKey('platform.name'),
     ]);
-    const requested = settingText(currencyRow?.value, settingText(legacyCurrency?.value, 'AED')).toUpperCase();
-    const currency = CURRENCY_SET.has(requested) ? requested : 'AED';
+    const fallback = settingText(currencyRow?.value, settingText(legacyCurrency?.value, 'AED')).toUpperCase();
+    const mapped = currencyForCountry(country, fallback).toUpperCase();
+    const currency = CURRENCY_SET.has(mapped) ? mapped : CURRENCY_SET.has(fallback) ? fallback : 'AED';
     return {
       currency,
       currencies: APP_CURRENCIES,
       countries: COUNTRIES,
+      country: country ?? null,
       siteName: settingText(siteRow?.value, settingText(platformName?.value, 'Zaya Events')),
     };
   },

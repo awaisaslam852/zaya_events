@@ -1,6 +1,7 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:zaya_events/core/bloc/safe_cubit.dart';
 import '../../../../core/realtime/socket_service.dart';
+import '../../../../core/sync/app_refresh.dart';
 import '../../domain/chat_usecases.dart';
 
 part 'chat_cubit.freezed.dart';
@@ -15,7 +16,7 @@ abstract class ChatState with _$ChatState {
   }) = _ChatState;
 }
 
-class ChatCubit extends Cubit<ChatState> {
+class ChatCubit extends SafeCubit<ChatState> {
   ChatCubit(this._list, this._messages, this._send, this._get, this._sockets) : super(const ChatState());
 
   final ListConversations _list;
@@ -27,6 +28,9 @@ class ChatCubit extends Cubit<ChatState> {
   String? participantAId;
   String? participantBId;
   String? _conversationId;
+  Map<String, dynamic>? _conversation;
+
+  Map<String, dynamic>? get conversation => _conversation;
 
   String? peerOf(String myId) {
     if (participantAId == myId) {
@@ -36,6 +40,27 @@ class ChatCubit extends Cubit<ChatState> {
       return participantAId;
     }
     return participantAId == myId ? participantBId : participantAId ?? participantBId;
+  }
+
+  String? peerLabel(String myId) {
+    final peerId = peerOf(myId);
+    for (final key in ['participantA', 'participantB']) {
+      final row = _conversation?[key];
+      if (row is! Map) {
+        continue;
+      }
+      if (row['id']?.toString() != peerId) {
+        continue;
+      }
+      final name = [row['firstName'], row['lastName'], row['businessName']]
+          .map((value) => value?.toString().trim() ?? '')
+          .where((value) => value.isNotEmpty)
+          .join(' ');
+      if (name.isNotEmpty) {
+        return name;
+      }
+    }
+    return null;
   }
 
   void _append(dynamic data) {
@@ -54,8 +79,10 @@ class ChatCubit extends Cubit<ChatState> {
     emit(state.copyWith(messages: [...state.messages, map], error: null));
   }
 
-  Future<void> loadInbox() async {
-    emit(state.copyWith(loading: true, error: null));
+  Future<void> loadInbox({bool silent = false}) async {
+    if (!silent) {
+      emit(state.copyWith(loading: true, error: null));
+    }
     final result = await _list();
     result.fold(
       (f) => emit(state.copyWith(loading: false, error: f.message)),
@@ -71,6 +98,7 @@ class ChatCubit extends Cubit<ChatState> {
     _sockets.chat?.emit('join', id);
     final convo = await _get(id);
     convo.fold((_) {}, (row) {
+      _conversation = row;
       participantAId = row['participantAId']?.toString();
       participantBId = row['participantBId']?.toString();
     });
@@ -92,6 +120,7 @@ class ChatCubit extends Cubit<ChatState> {
       },
       (msg) {
         _append(msg);
+        AppRefresh.instance.afterChat();
         return null;
       },
     );

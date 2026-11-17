@@ -13,6 +13,7 @@ import { apiRateLimiter } from './middleware/rateLimiter.js';
 import { requireAuth } from './middleware/auth.js';
 import { requireRole } from './middleware/rbac.js';
 import { customersRouter } from './modules/customers/customer.routes.js';
+import { adminsRouter } from './modules/admins/admin.routes.js';
 import { authRouter } from './modules/auth/auth.routes.js';
 import { agoraRouter } from './modules/agora/agora.routes.js';
 import { uploadsRouter } from './modules/uploads/upload.routes.js';
@@ -29,6 +30,7 @@ import { carsRouter } from './modules/cars/car.routes.js';
 import { accommodationsRouter } from './modules/accommodations/accommodation.routes.js';
 import { honeymoonRouter } from './modules/honeymoon/honeymoon.routes.js';
 import { favoritesRouter } from './modules/favorites/favorite.routes.js';
+import { cartRouter } from './modules/cart/cart.routes.js';
 import { notificationsRouter } from './modules/notifications/notification.routes.js';
 import { chatRouter } from './modules/chat/chat.routes.js';
 import { callsRouter } from './modules/calls/call.routes.js';
@@ -89,6 +91,7 @@ export function createApp(): Express {
   mountSwagger(app);
 
   app.use('/api/v1/customers', customersRouter);
+  app.use('/api/v1/admins', adminsRouter);
   app.use('/api/v1/auth', authRouter);
   app.use('/api/v1/agora', agoraRouter);
   app.use('/api/v1/uploads', uploadsRouter);
@@ -107,6 +110,7 @@ export function createApp(): Express {
   app.use('/api/v1/flights', flightsRouter);
   app.use('/api/v1/hotels', hotelsRouter);
   app.use('/api/v1/favorites', favoritesRouter);
+  app.use('/api/v1/cart', cartRouter);
   app.use('/api/v1/notifications', notificationsRouter);
   app.use('/api/v1/chat', chatRouter);
   app.use('/api/v1/calls', callsRouter);

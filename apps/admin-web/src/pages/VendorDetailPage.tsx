@@ -12,7 +12,7 @@ import { StatusBadge } from '@/components/StatusBadge';
 import { BackLink, EmptyHint, GalleryStrip, Section, StatTile } from '@/components/AdminChrome';
 import { LocalizedFields } from '@/components/LocalizedFields';
 import { FileUpload, GalleryUpload } from '@/components/FileUpload';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 
 type Catalog = {
@@ -45,7 +45,6 @@ type Vendor = {
   businessName: unknown;
   description: unknown;
   legalName: string | null;
-  taxId: string | null;
   user: { id: string; email: string; firstName: string; lastName: string; phone: string | null };
   listings: Catalog[];
   cars: Catalog[];
@@ -64,7 +63,6 @@ type VendorEdit = {
   city: string;
   phone: string;
   legalName: string;
-  taxId: string;
   website: string;
   coverKey: string;
   galleryKeys: string[];
@@ -97,7 +95,7 @@ export function VendorDetailPage() {
   });
   const commissions = useQuery({
     queryKey: ['vendor-commissions', id],
-    queryFn: () => unwrap<Paginated<{ id: string; amount: string; status: string }>>(api.get('/api/v1/commissions', { params: { vendorId: id } })),
+    queryFn: () => unwrap<Paginated<{ id: string; amount: string; status: string; currency?: string; hqAmount?: string; deskAmount?: string }>>(api.get('/api/v1/commissions', { params: { vendorId: id } })),
     enabled: Boolean(id),
   });
   const act = useMutation({
@@ -135,11 +133,11 @@ export function VendorDetailPage() {
         <div className="relative h-52 bg-[#003580]">
           {hero ? <img src={hero} alt="" className="h-full w-full object-cover opacity-80" /> : null}
           <div className="absolute inset-0 bg-gradient-to-t from-[#003580] to-transparent" />
-          <div className="absolute bottom-5 start-6 end-6 flex flex-wrap items-end justify-between gap-3 text-white">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#FEBB02]">Vendor partner</p>
-              <h1 className="text-3xl font-extrabold">{loc(v.businessName, i18n.language)}</h1>
-              <p className="text-white/80">
+          <div className="absolute bottom-4 start-4 end-4 flex flex-wrap items-end justify-between gap-3 text-white sm:bottom-5 sm:start-6 sm:end-6">
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#FEBB02]">{t('common.vendorPartner')}</p>
+              <h1 className="text-2xl font-extrabold sm:text-3xl">{loc(v.businessName, i18n.language)}</h1>
+              <p className="truncate text-white/80">
                 {v.user.firstName} {v.user.lastName} · {v.user.email}
               </p>
             </div>
@@ -158,7 +156,6 @@ export function VendorDetailPage() {
                 city: v.city ?? '',
                 phone: v.phone ?? v.user.phone ?? '',
                 legalName: v.legalName ?? '',
-                taxId: v.taxId ?? '',
                 website: v.website ?? '',
                 coverKey: v.coverKey ?? '',
                 galleryKeys: Array.isArray(v.galleryKeys) ? v.galleryKeys.map(String) : [],
@@ -173,7 +170,7 @@ export function VendorDetailPage() {
             {t('common.reject')}
           </Button>
           <Button variant="outline" onClick={() => patch.mutate({ status: 'SUSPENDED' })}>
-            Suspend
+            {t('staff.suspend')}
           </Button>
           <Button
             variant="destructive"
@@ -188,38 +185,38 @@ export function VendorDetailPage() {
           <div className="ms-auto flex items-center gap-2">
             <Input className="w-24" value={rate} onChange={(e) => setRate(e.target.value)} />
             <Button variant="cta" onClick={() => patch.mutate({ commissionRate: Number(rate) })}>
-              Save rate %
+              {t('common.saveRate')}
             </Button>
           </div>
         </div>
       </div>
 
       <div className="grid gap-3 md:grid-cols-4">
-        <StatTile label="City" value={v.city || '—'} hint={v.country || ''} />
-        <StatTile label="Phone" value={v.phone || v.user.phone || '—'} />
-        <StatTile label="Commission" value={`${v.commissionRate}%`} />
-        <StatTile label="Rating" value={`${v.ratingAvg} ★`} hint={`${v.ratingCount} reviews`} />
+        <StatTile label={t('common.city')} value={v.city || '—'} hint={v.country || ''} />
+        <StatTile label={t('common.phone')} value={v.phone || v.user.phone || '—'} />
+        <StatTile label={t('common.commission')} value={`${v.commissionRate}%`} />
+        <StatTile label={t('common.rating')} value={`${v.ratingAvg} ★`} hint={`${v.ratingCount} ${t('common.reviews')}`} />
       </div>
-      <Section title="About">
+      <Section title={t('common.about')}>
         <p className="text-sm leading-6 text-muted-foreground">{loc(v.description, i18n.language)}</p>
         <p className="mt-2 text-xs text-muted-foreground">
-          Legal: {v.legalName || '—'} · Tax: {v.taxId || '—'} · {v.website || ''}
+          {t('common.legal')}: {v.legalName || '—'} · {v.website || ''}
         </p>
         <div className="mt-4">
           <GalleryStrip items={[v, ...v.venues, ...v.listings, ...v.cars]} />
         </div>
       </Section>
 
-      <CatalogGrid title={`Listings (${v.listings.length})`} items={v.listings} lang={i18n.language} href="/listings" />
-      <CatalogGrid title={`Cars (${v.cars?.length ?? 0})`} items={v.cars ?? []} lang={i18n.language} href="/cars" />
-      <CatalogGrid title={`Venues (${v.venues?.length ?? 0})`} items={v.venues ?? []} lang={i18n.language} href="/venues" />
-      <CatalogGrid title={`Stays (${v.accommodations?.length ?? 0})`} items={v.accommodations ?? []} lang={i18n.language} href="/accommodations" />
-      <CatalogGrid title={`Honeymoon (${v.honeymoonPackages?.length ?? 0})`} items={v.honeymoonPackages ?? []} lang={i18n.language} href="/honeymoon" />
+      <CatalogGrid title={`${t('nav.listings')} (${v.listings.length})`} items={v.listings} lang={i18n.language} href="/listings" />
+      <CatalogGrid title={`${t('nav.cars')} (${v.cars?.length ?? 0})`} items={v.cars ?? []} lang={i18n.language} href="/cars" />
+      <CatalogGrid title={`${t('nav.venues')} (${v.venues?.length ?? 0})`} items={v.venues ?? []} lang={i18n.language} href="/venues" />
+      <CatalogGrid title={`${t('nav.accommodations')} (${v.accommodations?.length ?? 0})`} items={v.accommodations ?? []} lang={i18n.language} href="/accommodations" />
+      <CatalogGrid title={`${t('nav.honeymoon')} (${v.honeymoonPackages?.length ?? 0})`} items={v.honeymoonPackages ?? []} lang={i18n.language} href="/honeymoon" />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Section title={`${t('nav.bookings')} (${bookings.data?.total ?? 0})`}>
           {(bookings.data?.items ?? []).length === 0 ? (
-            <EmptyHint>No bookings</EmptyHint>
+            <EmptyHint>{t('common.noBookings')}</EmptyHint>
           ) : (
             <div className="space-y-2">
               {(bookings.data?.items ?? []).map((b) => (
@@ -243,7 +240,10 @@ export function VendorDetailPage() {
             ))}
             {(commissions.data?.items ?? []).map((c) => (
               <div key={c.id} className="flex justify-between rounded-xl border px-3 py-2">
-                <span>{money(c.amount)}</span>
+                <span>
+                  {money(c.amount, c.currency)}
+                  {c.deskAmount ? ` · desk ${money(c.deskAmount, c.currency)}` : ''}
+                </span>
                 <StatusBadge status={c.status} />
               </div>
             ))}
@@ -259,6 +259,7 @@ export function VendorDetailPage() {
         <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{t('common.edit')}</DialogTitle>
+            <DialogDescription>{t('pages.vendors')}</DialogDescription>
           </DialogHeader>
           <FormProvider {...form}>
             <form
@@ -272,7 +273,6 @@ export function VendorDetailPage() {
                   city: values.city || undefined,
                   phone: values.phone || undefined,
                   legalName: values.legalName || undefined,
-                  taxId: values.taxId || undefined,
                   website: values.website.trim() || undefined,
                   coverKey: values.coverKey || undefined,
                   galleryKeys: values.galleryKeys,
@@ -300,10 +300,6 @@ export function VendorDetailPage() {
                   <Label>{t('common.legalName')}</Label>
                   <Input {...form.register('legalName')} />
                 </div>
-                <div>
-                  <Label>{t('common.taxId')}</Label>
-                  <Input {...form.register('taxId')} />
-                </div>
               </div>
               <div>
                 <Label>{t('common.website')}</Label>
@@ -311,14 +307,19 @@ export function VendorDetailPage() {
               </div>
               <LocalizedFields name="businessName" />
               <LocalizedFields name="description" textarea />
-              <FileUpload label="Cover" folder="vendors" onUploaded={(f) => form.setValue('coverKey', f.url || f.key)} />
+              <FileUpload label={t('common.cover')} folder="vendors" onUploaded={(f) => form.setValue('coverKey', f.url || f.key)} />
               <GalleryUpload
                 label={t('common.photos')}
                 folder="vendors"
                 keys={form.watch('galleryKeys') ?? []}
                 onChange={(keys) => form.setValue('galleryKeys', keys)}
               />
-              <Button type="submit">{t('common.save')}</Button>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+                  {t('common.cancel')}
+                </Button>
+                <Button type="submit">{t('common.save')}</Button>
+              </DialogFooter>
             </form>
           </FormProvider>
         </DialogContent>
@@ -338,10 +339,11 @@ function CatalogGrid({
   lang: string;
   href: string;
 }) {
+  const { t } = useTranslation();
   return (
     <Section title={title}>
       {items.length === 0 ? (
-        <EmptyHint>Nothing published here</EmptyHint>
+        <EmptyHint>{t('common.nothingPublished')}</EmptyHint>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {items.map((item) => {

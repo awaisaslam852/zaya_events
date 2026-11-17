@@ -8,6 +8,7 @@ export type VendorUser = {
   role: string;
   firstName: string;
   lastName: string;
+  country?: string | null;
 };
 
 export function getAccessToken(): string | null {

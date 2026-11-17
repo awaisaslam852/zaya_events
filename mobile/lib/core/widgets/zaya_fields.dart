@@ -11,6 +11,12 @@ class ZayaTextField extends StatelessWidget {
     this.keyboardType,
     this.maxLines = 1,
     this.enabled = true,
+    this.suffixIcon,
+    this.errorText,
+    this.helperText,
+    this.onChanged,
+    this.textInputAction,
+    this.autofillHints,
   });
 
   final TextEditingController controller;
@@ -20,6 +26,12 @@ class ZayaTextField extends StatelessWidget {
   final TextInputType? keyboardType;
   final int maxLines;
   final bool enabled;
+  final Widget? suffixIcon;
+  final String? errorText;
+  final String? helperText;
+  final ValueChanged<String>? onChanged;
+  final TextInputAction? textInputAction;
+  final Iterable<String>? autofillHints;
 
   @override
   Widget build(BuildContext context) {
@@ -29,9 +41,15 @@ class ZayaTextField extends StatelessWidget {
       enabled: enabled,
       maxLines: obscureText ? 1 : maxLines,
       keyboardType: keyboardType,
+      onChanged: onChanged,
+      textInputAction: textInputAction,
+      autofillHints: autofillHints,
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: icon == null ? null : Icon(icon, color: AppTheme.navy),
+        suffixIcon: suffixIcon,
+        errorText: errorText,
+        helperText: errorText == null ? helperText : null,
       ),
     );
   }

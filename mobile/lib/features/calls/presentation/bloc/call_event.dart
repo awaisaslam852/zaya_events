@@ -10,5 +10,7 @@ abstract class CallEvent with _$CallEvent {
   const factory CallEvent.accept(String id) = _Accept;
   const factory CallEvent.reject(String id) = _Reject;
   const factory CallEvent.end(String id) = _End;
+  const factory CallEvent.peerAccepted(String id) = _PeerAccepted;
+  const factory CallEvent.cleared() = _Cleared;
   const factory CallEvent.loadHistory() = _LoadHistory;
 }

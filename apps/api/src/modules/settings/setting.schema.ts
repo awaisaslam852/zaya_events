@@ -4,6 +4,10 @@ export const settingListQuery = z.object({
   group: z.string().optional(),
 });
 
+export const settingPublicQuery = z.object({
+  country: z.string().length(2).optional(),
+});
+
 export const settingBody = z.object({
   key: z.string().min(1).max(120),
   group: z.string().min(1).max(60).default('general'),

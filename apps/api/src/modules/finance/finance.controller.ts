@@ -17,15 +17,15 @@ function toCsv(rows: Array<Record<string, string | number>>): string {
 export const financeController = {
   list: handle(async (req, res) => {
     const user = actor(req);
-    sendSuccess(res, await financeService.list(user.id, user.role, req.query as unknown as z.infer<typeof invoiceListQuery>));
+    sendSuccess(res, await financeService.list(user.id, user.role, req.query as unknown as z.infer<typeof invoiceListQuery>, user));
   }),
   get: handle(async (req, res) => {
     const user = actor(req);
-    sendSuccess(res, await financeService.get(user.id, user.role, String(req.params.id)));
+    sendSuccess(res, await financeService.get(user.id, user.role, String(req.params.id), user));
   }),
   erp: handle(async (req, res) => {
     const query = req.query as unknown as z.infer<typeof erpExportQuery>;
-    const rows = await financeService.erpExport(query);
+    const rows = await financeService.erpExport(query, actor(req));
     if (query.format === 'json') {
       sendSuccess(res, { items: rows, system: 'generic-erp', vatRate: financeService.vatRate() });
       return;

@@ -9,22 +9,26 @@ class AppConfig {
 
   static const prefsOverrideKey = 'api_base_url_override';
 
+  static const liveApiBaseUrl = 'https://zaya-events.com/api/v1';
+  static const liveAdminWebUrl = 'https://zaya-events.com';
+
   factory AppConfig.fromEnvironment() {
     const fromDefine = String.fromEnvironment('API_BASE_URL');
     const adminDefine = String.fromEnvironment('ADMIN_WEB_URL');
     const agora = String.fromEnvironment('AGORA_APP_ID');
     return AppConfig(
       apiBaseUrl: fromDefine.isNotEmpty ? fromDefine : defaultApiBaseUrl(),
-      adminWebUrl: adminDefine.isNotEmpty ? adminDefine : 'http://localhost:5173',
+      adminWebUrl: adminDefine.isNotEmpty ? adminDefine : liveAdminWebUrl,
       agoraAppId: agora,
     );
   }
 
   static Future<AppConfig> resolve({String? prefsOverride}) async {
     final base = AppConfig.fromEnvironment();
-    if (prefsOverride != null && prefsOverride.trim().isNotEmpty) {
+    final override = prefsOverride?.trim() ?? '';
+    if (override.isNotEmpty && !_isLocalDevHost(override)) {
       return AppConfig(
-        apiBaseUrl: _normalize(prefsOverride.trim()),
+        apiBaseUrl: _normalize(override),
         adminWebUrl: base.adminWebUrl,
         agoraAppId: base.agoraAppId,
       );
@@ -33,14 +37,18 @@ class AppConfig {
     return AppConfig(apiBaseUrl: url, adminWebUrl: base.adminWebUrl, agoraAppId: base.agoraAppId);
   }
 
-  static String defaultApiBaseUrl() {
-    if (kIsWeb) {
-      return 'http://127.0.0.1:4000/api/v1';
+  static String defaultApiBaseUrl() => liveApiBaseUrl;
+
+  static bool _isLocalDevHost(String url) {
+    final uri = Uri.tryParse(url);
+    if (uri == null || uri.host.isEmpty) {
+      return true;
     }
-    if (defaultTargetPlatform == TargetPlatform.android) {
-      return 'http://192.168.0.123:4000/api/v1';
-    }
-    return 'http://127.0.0.1:4000/api/v1';
+    final host = uri.host;
+    return host == 'localhost' ||
+        host == '127.0.0.1' ||
+        host == '10.0.2.2' ||
+        host == '192.168.0.123';
   }
 
   static Future<String> rewriteForDevice(String url) async {

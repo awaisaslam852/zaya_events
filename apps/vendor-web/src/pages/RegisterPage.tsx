@@ -11,6 +11,7 @@ import { LocalizedFields } from '@/components/LocalizedFields';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { LanguageSwitch } from '@/components/LanguageSwitch';
 import { toast } from 'sonner';
 
 const locSchema = z.object({ en: z.string().min(1), ar: z.string().min(1) });
@@ -22,9 +23,7 @@ const schema = z.object({
   phone: z.string().min(8),
   country: z.string().min(2),
   city: z.string().min(1),
-  legalName: z.string().min(1),
-  taxId: z.string().min(1),
-  website: z.string().optional(),
+  legalName: z.string().optional(),
   businessName: locSchema,
   description: locSchema.optional(),
 });
@@ -44,8 +43,6 @@ export function RegisterPage() {
       country: 'AE',
       city: '',
       legalName: '',
-      taxId: '',
-      website: '',
       businessName: { en: '', ar: '' },
       description: { en: 'Wedding vendor', ar: 'مورد مناسبات' },
     },
@@ -58,8 +55,16 @@ export function RegisterPage() {
         tokens: { accessToken: string; refreshToken: string };
       }>(
         api.post('/api/v1/auth/register', {
-          ...values,
-          website: values.website?.trim() || undefined,
+          email: values.email.trim(),
+          password: values.password,
+          firstName: values.firstName.trim(),
+          lastName: values.lastName.trim(),
+          phone: values.phone.trim(),
+          country: values.country,
+          city: values.city.trim(),
+          legalName: values.legalName?.trim() || values.businessName.en,
+          businessName: values.businessName,
+          description: values.description,
           role: 'vendor',
           locale: i18n.language.startsWith('ar') ? 'ar' : 'en',
         }),
@@ -81,15 +86,18 @@ export function RegisterPage() {
         </div>
         <p className="text-sm text-white/70">Applications are reviewed before listings go live.</p>
       </div>
-      <div className="flex items-center justify-center bg-[#f5f7fa] p-6">
+      <div className="flex items-center justify-center bg-[#f5f7fa] p-4 sm:p-6">
         <FormProvider {...form}>
           <form
-            className="w-full max-w-2xl space-y-4 rounded-2xl border bg-white p-8 shadow-xl shadow-blue-900/5"
+            className="w-full max-w-2xl space-y-4 rounded-2xl border bg-white p-5 shadow-xl shadow-blue-900/5 sm:p-8"
             onSubmit={form.handleSubmit((v) => void onSubmit(v))}
           >
-            <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-[#0071c2]">Vendors</p>
-              <h2 className="mt-1 text-2xl font-extrabold text-[#003580]">{t('auth.register')}</h2>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-[#0071c2]">Vendors</p>
+                <h2 className="mt-1 text-2xl font-extrabold text-[#003580]">{t('auth.register')}</h2>
+              </div>
+              <LanguageSwitch />
             </div>
             <div className="grid gap-3 md:grid-cols-2">
               <Field label={t('auth.firstName')}>
@@ -121,12 +129,6 @@ export function RegisterPage() {
               </Field>
               <Field label={t('auth.legalName')}>
                 <Input {...form.register('legalName')} />
-              </Field>
-              <Field label={t('auth.taxId')}>
-                <Input {...form.register('taxId')} />
-              </Field>
-              <Field label={t('auth.website')}>
-                <Input {...form.register('website')} />
               </Field>
             </div>
             <LocalizedFields name="businessName" />

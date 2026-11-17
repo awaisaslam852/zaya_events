@@ -30,6 +30,11 @@ export const bookingRepository = {
         payments: true,
         invoices: true,
         commissions: true,
+        reviews: {
+          where: { deletedAt: null },
+          include: { author: { select: { id: true, firstName: true, lastName: true, vendor: { select: { businessName: true } } } } },
+          orderBy: { createdAt: 'asc' },
+        },
       },
     });
   },

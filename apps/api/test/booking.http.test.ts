@@ -17,6 +17,7 @@ async function seedAdmin(): Promise<{ email: string; password: string }> {
       email,
       passwordHash,
       role: Role.ADMIN,
+      isSuperAdmin: true,
       status: UserStatus.ACTIVE,
       firstName: 'Test',
       lastName: 'Admin',

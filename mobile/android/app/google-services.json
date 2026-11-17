@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "120051328500",
+    "project_id": "zaya-events",
+    "storage_bucket": "zaya-events.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:120051328500:android:9dd3ac8a8abb6e967cc5a1",
+        "android_client_info": {
+          "package_name": "com.example.zaya_events"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDI--dpjqojtLyMCTXyhUn9b63PiaP7BzE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

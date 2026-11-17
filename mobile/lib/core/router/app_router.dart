@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../auth/app_role.dart';
 import '../di/injection.dart';
 import '../shells/customer_shell.dart';
@@ -18,8 +19,11 @@ import '../../features/availability_calendar/presentation/pages/availability_cal
 import '../../features/booking_requests/presentation/pages/booking_requests_page.dart';
 import '../../features/bookings/presentation/pages/bookings_detail_page.dart';
 import '../../features/bookings/presentation/pages/bookings_list_page.dart';
+import '../../features/cart/cart_page.dart';
+import '../../features/calls/domain/entities/call_entity.dart';
 import '../../features/calls/presentation/pages/active_call_page.dart';
 import '../../features/calls/presentation/pages/call_history_page.dart';
+import '../../features/calls/presentation/pages/incoming_call_page.dart';
 import '../../features/calls/presentation/pages/outgoing_call_page.dart';
 import '../../features/cars/presentation/pages/cars_detail_page.dart';
 import '../../features/cars/presentation/pages/cars_list_page.dart';
@@ -32,17 +36,27 @@ import '../../features/favorites/presentation/pages/favorites_list_page.dart';
 import '../../features/flights/presentation/pages/flights_detail_page.dart';
 import '../../features/flights/presentation/pages/flights_list_page.dart';
 import '../../features/home/presentation/pages/customer_home_page.dart';
+import '../../features/intro/intro_page.dart';
+import '../../features/intro/intro_prefs.dart';
 import '../../features/honeymoon/presentation/pages/honeymoon_detail_page.dart';
 import '../../features/honeymoon/presentation/pages/honeymoon_list_page.dart';
 import '../../features/hotels/presentation/pages/hotels_detail_page.dart';
 import '../../features/hotels/presentation/pages/hotels_list_page.dart';
 import '../../features/listings/presentation/pages/listing_editor_page.dart';
-import '../../features/listings/presentation/pages/vendor_listings_page.dart';
+import '../../features/listings/presentation/pages/listings_detail_page.dart';
+import '../../features/listings/presentation/pages/listings_list_page.dart';
+import '../../features/payments/payment_checkout_args.dart';
+import '../../features/payments/presentation/pages/customer_payments_page.dart';
+import '../../features/payments/presentation/pages/payment_checkout_page.dart';
+import '../../features/vendor_catalog/pages/vendor_catalog_page.dart';
+import '../../features/vendor_catalog/pages/vendor_product_editor_page.dart';
+import '../../features/vendor_catalog/vendor_catalog_kind.dart';
 import '../../features/packages/presentation/pages/vendor_packages_page.dart';
 import '../../features/notifications/presentation/pages/notifications_list_page.dart';
 import '../../features/profile/presentation/pages/profile_edit_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/settings/presentation/pages/settings_page.dart';
+import '../../features/vendor_dashboard/presentation/pages/vendor_bookings_history_page.dart';
 import '../../features/vendor_dashboard/presentation/pages/vendor_dashboard_page.dart';
 import '../../features/vendor_dashboard/presentation/pages/vendor_extra_pages.dart';
 import '../../features/vendors_browse/presentation/pages/vendors_detail_page.dart';
@@ -64,7 +78,8 @@ class AppRouter {
     );
   }
 
-  static String? _sameOrGo(String loc, String target) => loc == target ? null : target;
+  static String? _sameOrGo(String loc, String target) =>
+      loc == target ? null : target;
 
   static final router = GoRouter(
     navigatorKey: rootKey,
@@ -73,27 +88,57 @@ class AppRouter {
     redirect: (context, state) {
       final auth = sl<AuthBloc>().state;
       final loc = state.matchedLocation;
-      final loggingIn = loc.startsWith('/login') ||
+      final onIntro = loc.startsWith('/intro');
+      final onCallScreen =
+          loc.startsWith('/calls/incoming') ||
+          loc.startsWith('/calls/active') ||
+          loc.startsWith('/calls/outgoing');
+      final loggingIn =
+          loc.startsWith('/login') ||
           loc.startsWith('/register') ||
           loc.startsWith('/forgot') ||
-          loc.startsWith('/reset');
+          loc.startsWith('/reset') ||
+          onIntro;
+      final introDone = IntroPrefs.seen(sl<SharedPreferences>());
       return auth.maybeWhen(
-        unknown: () => loggingIn ? null : _sameOrGo(loc, '/login'),
-        unauthenticated: (_) => loggingIn ? null : _sameOrGo(loc, '/login'),
+        unknown: () => (loggingIn || onCallScreen) ? null : _sameOrGo(loc, '/login'),
+        unauthenticated: (_) {
+          if (onCallScreen) {
+            return null;
+          }
+          if (!introDone && !onIntro) {
+            return _sameOrGo(loc, '/intro');
+          }
+          return loggingIn ? null : _sameOrGo(loc, '/login');
+        },
         busy: () => null,
-        adminRedirect: (_) => loc == '/admin-redirect' ? null : '/admin-redirect',
+        adminRedirect: (_) =>
+            loc == '/admin-redirect' ? null : '/admin-redirect',
         authenticated: (user) {
           final role = parseAppRole(user.role);
-          if (role == AppRole.customer && !loc.startsWith('/customer') && !_shared(loc)) {
+          if (!introDone && !onIntro) {
+            return _sameOrGo(loc, '/intro');
+          }
+          if (onIntro) {
+            return null;
+          }
+          if (role == AppRole.customer &&
+              !loc.startsWith('/customer') &&
+              !_shared(loc)) {
             return _sameOrGo(loc, '/customer/home');
           }
-          if (role == AppRole.vendor && !loc.startsWith('/vendor') && !_shared(loc)) {
+          if (role == AppRole.vendor &&
+              !loc.startsWith('/vendor') &&
+              !_shared(loc)) {
             return _sameOrGo(loc, '/vendor/dashboard');
           }
           if (role == AppRole.customer && loc.startsWith('/vendor')) {
             return _sameOrGo(loc, '/customer/home');
           }
           if (role == AppRole.vendor && loc.startsWith('/customer')) {
+            return _sameOrGo(loc, '/vendor/dashboard');
+          }
+          if (role == AppRole.vendor && isCustomerOnlyAppRoute(loc)) {
             return _sameOrGo(loc, '/vendor/dashboard');
           }
           if (loggingIn) {
@@ -108,6 +153,11 @@ class AppRouter {
       );
     },
     routes: [
+      GoRoute(
+        path: '/intro',
+        parentNavigatorKey: rootKey,
+        builder: (c, s) => const IntroPage(),
+      ),
       GoRoute(
         path: '/login',
         parentNavigatorKey: rootKey,
@@ -126,14 +176,19 @@ class AppRouter {
       GoRoute(
         path: '/reset-password',
         parentNavigatorKey: rootKey,
-        builder: (c, s) => ResetPasswordPage(token: s.uri.queryParameters['token'] ?? ''),
+        builder: (c, s) =>
+            ResetPasswordPage(token: s.uri.queryParameters['token'] ?? ''),
       ),
       GoRoute(
         path: '/admin-redirect',
         parentNavigatorKey: rootKey,
         builder: (c, s) => const AdminRedirectPage(),
       ),
-      GoRoute(path: '/settings', parentNavigatorKey: rootKey, builder: (c, s) => const SettingsPage()),
+      GoRoute(
+        path: '/settings',
+        parentNavigatorKey: rootKey,
+        builder: (c, s) => const SettingsPage(),
+      ),
       GoRoute(
         path: '/notifications',
         parentNavigatorKey: rootKey,
@@ -153,6 +208,14 @@ class AppRouter {
         path: '/calls/outgoing',
         parentNavigatorKey: rootKey,
         builder: (c, s) => const OutgoingCallPage(),
+      ),
+      GoRoute(
+        path: '/calls/incoming',
+        parentNavigatorKey: rootKey,
+        builder: (c, s) {
+          final extra = s.extra;
+          return IncomingCallPage(call: extra is CallEntity ? extra : null);
+        },
       ),
       GoRoute(
         path: '/calls/active/:id',
@@ -175,67 +238,134 @@ class AppRouter {
           return CustomerShell(child: child);
         },
         routes: [
-          GoRoute(path: '/customer/home', builder: (c, s) => const CustomerHomePage()),
-          GoRoute(path: '/customer/events', builder: (c, s) => const EventsListPage()),
-          GoRoute(path: '/customer/chat', builder: (c, s) => const ChatInboxPage()),
-          GoRoute(path: '/customer/favorites', builder: (c, s) => const FavoritesListPage()),
-          GoRoute(path: '/customer/profile', builder: (c, s) => const ProfilePage()),
-          GoRoute(path: '/vendor/dashboard', builder: (c, s) => const VendorDashboardPage()),
-          GoRoute(path: '/vendor/listings', builder: (c, s) => const VendorListingsPage()),
-          GoRoute(path: '/vendor/requests', builder: (c, s) => const BookingRequestsPage()),
-          GoRoute(path: '/vendor/chat', builder: (c, s) => const ChatInboxPage()),
-          GoRoute(path: '/vendor/profile', builder: (c, s) => const ProfilePage()),
+          GoRoute(
+            path: '/customer/home',
+            builder: (c, s) => const CustomerHomePage(),
+          ),
+          GoRoute(
+            path: '/customer/bookings',
+            builder: (c, s) => const BookingsListPage(),
+          ),
+          GoRoute(
+            path: '/customer/chat',
+            builder: (c, s) => const ChatInboxPage(),
+          ),
+          GoRoute(
+            path: '/customer/favorites',
+            builder: (c, s) => const FavoritesListPage(),
+          ),
+          GoRoute(
+            path: '/customer/profile',
+            builder: (c, s) => const ProfilePage(),
+          ),
+          GoRoute(
+            path: '/vendor/dashboard',
+            builder: (c, s) => const VendorDashboardPage(),
+          ),
+          GoRoute(
+            path: '/vendor/listings',
+            builder: (c, s) => const VendorCatalogPage(),
+          ),
+          GoRoute(
+            path: '/vendor/requests',
+            builder: (c, s) => const BookingRequestsPage(),
+          ),
+          GoRoute(
+            path: '/vendor/chat',
+            builder: (c, s) => const ChatInboxPage(),
+          ),
+          GoRoute(
+            path: '/vendor/profile',
+            builder: (c, s) => const ProfilePage(),
+          ),
         ],
       ),
-      GoRoute(path: '/customer/venues', parentNavigatorKey: rootKey, builder: (c, s) => const VenuesListPage()),
+      GoRoute(
+        path: '/customer/venues',
+        parentNavigatorKey: rootKey,
+        builder: (c, s) => const VenuesListPage(),
+      ),
       GoRoute(
         path: '/venues/:id',
         parentNavigatorKey: rootKey,
         builder: (c, s) => VenuesDetailPage(id: s.pathParameters['id']!),
       ),
-      GoRoute(path: '/customer/vendors', parentNavigatorKey: rootKey, builder: (c, s) => const VendorsListPage()),
+      GoRoute(
+        path: '/customer/vendors',
+        parentNavigatorKey: rootKey,
+        builder: (c, s) => const VendorsListPage(),
+      ),
       GoRoute(
         path: '/vendors_browse/:id',
         parentNavigatorKey: rootKey,
         builder: (c, s) => VendorsDetailPage(id: s.pathParameters['id']!),
       ),
-      GoRoute(path: '/customer/cars', parentNavigatorKey: rootKey, builder: (c, s) => const CarsListPage()),
+      GoRoute(
+        path: '/customer/cars',
+        parentNavigatorKey: rootKey,
+        builder: (c, s) => const CarsListPage(),
+      ),
       GoRoute(
         path: '/cars/:id',
         parentNavigatorKey: rootKey,
         builder: (c, s) => CarsDetailPage(id: s.pathParameters['id']!),
       ),
-      GoRoute(path: '/customer/stays', parentNavigatorKey: rootKey, builder: (c, s) => const AccommodationsListPage()),
+      GoRoute(
+        path: '/customer/stays',
+        parentNavigatorKey: rootKey,
+        builder: (c, s) => const AccommodationsListPage(),
+      ),
       GoRoute(
         path: '/accommodations/:id',
         parentNavigatorKey: rootKey,
-        builder: (c, s) => AccommodationsDetailPage(id: s.pathParameters['id']!),
+        builder: (c, s) =>
+            AccommodationsDetailPage(id: s.pathParameters['id']!),
       ),
-      GoRoute(path: '/customer/honeymoon', parentNavigatorKey: rootKey, builder: (c, s) => const HoneymoonListPage()),
+      GoRoute(
+        path: '/customer/honeymoon',
+        parentNavigatorKey: rootKey,
+        builder: (c, s) => const HoneymoonListPage(),
+      ),
       GoRoute(
         path: '/honeymoon/:id',
         parentNavigatorKey: rootKey,
         builder: (c, s) => HoneymoonDetailPage(id: s.pathParameters['id']!),
       ),
-      GoRoute(path: '/customer/flights', parentNavigatorKey: rootKey, builder: (c, s) => const FlightsListPage()),
+      GoRoute(
+        path: '/customer/flights',
+        parentNavigatorKey: rootKey,
+        builder: (c, s) => const FlightsListPage(),
+      ),
       GoRoute(
         path: '/flights/:id',
         parentNavigatorKey: rootKey,
         builder: (c, s) => FlightsDetailPage(id: s.pathParameters['id']!),
       ),
-      GoRoute(path: '/customer/hotels', parentNavigatorKey: rootKey, builder: (c, s) => const HotelsListPage()),
+      GoRoute(
+        path: '/customer/hotels',
+        parentNavigatorKey: rootKey,
+        builder: (c, s) => const HotelsListPage(),
+      ),
       GoRoute(
         path: '/hotels/:id',
         parentNavigatorKey: rootKey,
         builder: (c, s) => HotelsDetailPage(id: s.pathParameters['id']!),
       ),
-      GoRoute(path: '/customer/bookings', parentNavigatorKey: rootKey, builder: (c, s) => const BookingsListPage()),
+      GoRoute(
+        path: '/customer/events',
+        parentNavigatorKey: rootKey,
+        builder: (c, s) => const EventsListPage(),
+      ),
       GoRoute(
         path: '/bookings/:id',
         parentNavigatorKey: rootKey,
         builder: (c, s) => BookingsDetailPage(id: s.pathParameters['id']!),
       ),
-      GoRoute(path: '/customer/visits', parentNavigatorKey: rootKey, builder: (c, s) => const VisitsListPage()),
+      GoRoute(
+        path: '/customer/visits',
+        parentNavigatorKey: rootKey,
+        builder: (c, s) => const VisitsListPage(),
+      ),
       GoRoute(
         path: '/venue_visits/:id',
         parentNavigatorKey: rootKey,
@@ -256,7 +386,52 @@ class AppRouter {
         parentNavigatorKey: rootKey,
         builder: (c, s) => const EventEditorPage(),
       ),
-      GoRoute(path: '/customer/ai', parentNavigatorKey: rootKey, builder: (c, s) => const AiPlannerPage()),
+      GoRoute(
+        path: '/customer/ai',
+        parentNavigatorKey: rootKey,
+        builder: (c, s) => const AiPlannerPage(),
+      ),
+      GoRoute(
+        path: '/customer/listings',
+        parentNavigatorKey: rootKey,
+        builder: (c, s) => const ListingsListPage(),
+      ),
+      GoRoute(
+        path: '/listings/:id',
+        parentNavigatorKey: rootKey,
+        builder: (c, s) => ListingsDetailPage(id: s.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/customer/payments',
+        parentNavigatorKey: rootKey,
+        builder: (c, s) => const CustomerPaymentsPage(),
+      ),
+      GoRoute(
+        path: '/payments/checkout',
+        parentNavigatorKey: rootKey,
+        builder: (c, s) {
+          final extra = s.extra;
+          if (extra is PaymentCheckoutArgs) {
+            return PaymentCheckoutPage(args: extra);
+          }
+          return const PaymentCheckoutPage(
+            args: PaymentCheckoutArgs(
+              bookingId: '',
+              paymentId: '',
+              clientSecret: '',
+              publishableKey: '',
+              amount: 0,
+              currency: 'AED',
+              kind: 'DEPOSIT',
+            ),
+          );
+        },
+      ),
+      GoRoute(
+        path: '/customer/cart',
+        parentNavigatorKey: rootKey,
+        builder: (c, s) => const CartPage(),
+      ),
       GoRoute(
         path: '/vendor/listing/new',
         parentNavigatorKey: rootKey,
@@ -268,12 +443,91 @@ class AppRouter {
         builder: (c, s) => ListingEditorPage(id: s.pathParameters['id']),
       ),
       GoRoute(
+        path: '/vendor/venues/new',
+        parentNavigatorKey: rootKey,
+        builder: (c, s) =>
+            const VendorProductEditorPage(kind: VendorCatalogKind.venue),
+      ),
+      GoRoute(
+        path: '/vendor/venues/edit/:id',
+        parentNavigatorKey: rootKey,
+        builder: (c, s) => VendorProductEditorPage(
+          kind: VendorCatalogKind.venue,
+          id: s.pathParameters['id'],
+        ),
+      ),
+      GoRoute(
+        path: '/vendor/cars/new',
+        parentNavigatorKey: rootKey,
+        builder: (c, s) =>
+            const VendorProductEditorPage(kind: VendorCatalogKind.car),
+      ),
+      GoRoute(
+        path: '/vendor/cars/edit/:id',
+        parentNavigatorKey: rootKey,
+        builder: (c, s) => VendorProductEditorPage(
+          kind: VendorCatalogKind.car,
+          id: s.pathParameters['id'],
+        ),
+      ),
+      GoRoute(
+        path: '/vendor/stays/new',
+        parentNavigatorKey: rootKey,
+        builder: (c, s) =>
+            const VendorProductEditorPage(kind: VendorCatalogKind.stay),
+      ),
+      GoRoute(
+        path: '/vendor/stays/edit/:id',
+        parentNavigatorKey: rootKey,
+        builder: (c, s) => VendorProductEditorPage(
+          kind: VendorCatalogKind.stay,
+          id: s.pathParameters['id'],
+        ),
+      ),
+      GoRoute(
+        path: '/vendor/honeymoon/new',
+        parentNavigatorKey: rootKey,
+        builder: (c, s) =>
+            const VendorProductEditorPage(kind: VendorCatalogKind.honeymoon),
+      ),
+      GoRoute(
+        path: '/vendor/honeymoon/edit/:id',
+        parentNavigatorKey: rootKey,
+        builder: (c, s) => VendorProductEditorPage(
+          kind: VendorCatalogKind.honeymoon,
+          id: s.pathParameters['id'],
+        ),
+      ),
+      GoRoute(
+        path: '/vendor/bookings',
+        parentNavigatorKey: rootKey,
+        builder: (c, s) => const VendorBookingsHistoryPage(),
+      ),
+      GoRoute(
+        path: '/vendor/visits',
+        parentNavigatorKey: rootKey,
+        builder: (c, s) => const VisitsListPage(),
+      ),
+      GoRoute(
         path: '/vendor/calendar',
         parentNavigatorKey: rootKey,
         builder: (c, s) => const AvailabilityCalendarPage(),
       ),
-      GoRoute(path: '/vendor/packages', parentNavigatorKey: rootKey, builder: (c, s) => const VendorPackagesPage()),
-      GoRoute(path: '/vendor/reviews', parentNavigatorKey: rootKey, builder: (c, s) => const VendorReviewsPage()),
+      GoRoute(
+        path: '/vendor/packages',
+        parentNavigatorKey: rootKey,
+        builder: (c, s) => const VendorPackagesPage(),
+      ),
+      GoRoute(
+        path: '/vendor/earnings',
+        parentNavigatorKey: rootKey,
+        builder: (c, s) => const VendorEarningsPage(),
+      ),
+      GoRoute(
+        path: '/vendor/reviews',
+        parentNavigatorKey: rootKey,
+        builder: (c, s) => const VendorReviewsPage(),
+      ),
       GoRoute(
         path: '/vendor/business',
         parentNavigatorKey: rootKey,
@@ -282,17 +536,37 @@ class AppRouter {
     ],
   );
 
-  static bool _shared(String loc) {
-    return loc.startsWith('/settings') ||
-        loc.startsWith('/notifications') ||
-        loc.startsWith('/profile') ||
-        loc.startsWith('/calls') ||
-        loc.startsWith('/chat') ||
-        loc.startsWith('/venues') ||
-        loc.startsWith('/cars') ||
-        loc.startsWith('/hotels') ||
-        loc.startsWith('/flights');
-  }
+  static bool _shared(String loc) => isSharedAppRoute(loc);
+}
+
+/// Detail and tool screens that both customers and vendors may open.
+bool isSharedAppRoute(String loc) {
+  const prefixes = [
+    '/settings',
+    '/notifications',
+    '/profile',
+    '/calls',
+    '/chat',
+    '/venues',
+    '/cars',
+    '/hotels',
+    '/flights',
+    '/bookings',
+    '/accommodations',
+    '/honeymoon',
+    '/vendors_browse',
+    '/venue_visits',
+    '/events',
+    '/listings',
+    '/payments',
+  ];
+  return prefixes.any(loc.startsWith);
+}
+
+/// Pay, cart, and event planning stay on the customer account only.
+bool isCustomerOnlyAppRoute(String loc) {
+  const prefixes = ['/payments', '/events'];
+  return prefixes.any(loc.startsWith);
 }
 
 class GoRouterRefreshStream extends ChangeNotifier {
@@ -300,7 +574,7 @@ class GoRouterRefreshStream extends ChangeNotifier {
     _sub = stream.listen((_) => notifyListeners());
   }
 
-    late final StreamSubscription<dynamic> _sub;
+  late final StreamSubscription<dynamic> _sub;
 
   @override
   void dispose() {

@@ -1,10 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import AgoraRTC, {
   AgoraRTCProvider,
-  LocalUser,
-  RemoteUser,
   useJoin,
-  useLocalCameraTrack,
   useLocalMicrophoneTrack,
   usePublish,
   useRemoteUsers,
@@ -25,16 +22,23 @@ export function IncomingCallHost() {
   const [rtc, setRtc] = useState<Rtc | null>(null);
   const [activeCallId, setActiveCallId] = useState<string | null>(null);
   const [muted, setMuted] = useState(false);
-  const [camOff, setCamOff] = useState(false);
   const apiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:4000';
   const socket = useMemo(
-    () => io(`${apiUrl}/calls`, { auth: { token: getAccessToken() }, autoConnect: false }),
+    () =>
+      io(`${apiUrl}/calls`, {
+        autoConnect: false,
+        transports: ['websocket'],
+        reconnection: true,
+      }),
     [apiUrl],
   );
 
   useEffect(() => {
+    socket.auth = { token: getAccessToken() ?? '' };
     socket.connect();
-    socket.on('call:incoming', (payload: Incoming) => setIncoming(payload));
+    const onIncoming = (payload: Incoming) => setIncoming(payload);
+    socket.on('call:incoming', onIncoming);
+    socket.on('incoming_call', onIncoming);
     socket.on('call:ended', () => {
       setIncoming(null);
       setRtc(null);
@@ -42,6 +46,8 @@ export function IncomingCallHost() {
     socket.on('call:rejected', () => setIncoming(null));
     socket.on('call:missed', () => setIncoming(null));
     return () => {
+      socket.off('call:incoming', onIncoming);
+      socket.off('incoming_call', onIncoming);
       socket.disconnect();
     };
   }, [socket]);
@@ -101,7 +107,7 @@ export function IncomingCallHost() {
         </div>
       ) : null}
       {rtc ? (
-        <InCall rtc={rtc} muted={muted} camOff={camOff} onMute={() => setMuted((v) => !v)} onCam={() => setCamOff((v) => !v)} onEnd={() => void end()} />
+        <InCall rtc={rtc} muted={muted} onMute={() => setMuted((v) => !v)} onEnd={() => void end()} />
       ) : null}
     </div>
   );
@@ -110,29 +116,22 @@ export function IncomingCallHost() {
 function InCall({
   rtc,
   muted,
-  camOff,
   onMute,
-  onCam,
   onEnd,
 }: {
   rtc: Rtc;
   muted: boolean;
-  camOff: boolean;
   onMute: () => void;
-  onCam: () => void;
   onEnd: () => void;
 }) {
   const { t } = useTranslation();
   const client = useMemo(() => AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' }), []);
   return (
     <AgoraRTCProvider client={client}>
-      <CallTracks rtc={rtc} muted={muted} camOff={camOff} />
+      <CallTracks rtc={rtc} muted={muted} />
       <div className="mt-2 flex gap-2">
         <Button size="sm" variant="outline" onClick={onMute}>
           {t('calls.mute')}
-        </Button>
-        <Button size="sm" variant="outline" onClick={onCam}>
-          {t('calls.camera')}
         </Button>
         <Button size="sm" variant="destructive" onClick={onEnd}>
           {t('calls.end')}
@@ -142,26 +141,16 @@ function InCall({
   );
 }
 
-function CallTracks({ rtc, muted, camOff }: { rtc: Rtc; muted: boolean; camOff: boolean }) {
+function CallTracks({ rtc, muted }: { rtc: Rtc; muted: boolean }) {
   const { t } = useTranslation();
   useJoin({ appid: rtc.appId, channel: rtc.channelName, token: rtc.token, uid: rtc.uid }, true);
   const { localMicrophoneTrack } = useLocalMicrophoneTrack(!muted);
-  const { localCameraTrack } = useLocalCameraTrack(!camOff);
-  usePublish([localMicrophoneTrack, localCameraTrack]);
+  usePublish([localMicrophoneTrack]);
   const remotes = useRemoteUsers();
   return (
     <div>
       <p className="mb-2 text-sm">{t('calls.inCall')}</p>
-      <div className="grid grid-cols-2 gap-2">
-        <div className="h-40 overflow-hidden rounded bg-black">
-          <LocalUser audioTrack={localMicrophoneTrack} cameraOn={!camOff} micOn={!muted} videoTrack={localCameraTrack} />
-        </div>
-        {remotes.map((user) => (
-          <div key={String(user.uid)} className="h-40 overflow-hidden rounded bg-black">
-            <RemoteUser user={user} playVideo playAudio />
-          </div>
-        ))}
-      </div>
+      <p className="text-xs text-muted-foreground">{remotes.length > 0 ? t('calls.inCall') : t('calls.incoming')}</p>
     </div>
   );
 }

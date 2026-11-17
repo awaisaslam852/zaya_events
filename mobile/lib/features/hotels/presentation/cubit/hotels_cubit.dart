@@ -1,8 +1,8 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:zaya_events/core/bloc/safe_cubit.dart';
 import '../../domain/usecases/hotels_usecases.dart';
 import 'hotels_state.dart';
 
-class HotelsCubit extends Cubit<HotelsState> {
+class HotelsCubit extends SafeCubit<HotelsState> {
   HotelsCubit(this._list, this._get, this._book) : super(const HotelsState());
 
   final ListHotels _list;

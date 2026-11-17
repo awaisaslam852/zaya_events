@@ -4,6 +4,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'app.dart';
 import 'core/di/injection.dart';
 import 'core/notifications/push_bootstrap.dart';
+import 'core/router/app_router.dart';
+import 'firebase_options.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/auth/presentation/bloc/auth_event.dart';
 import 'features/calls/presentation/bloc/call_bloc.dart';
@@ -83,10 +85,13 @@ class _ZayaStartupAppState extends State<ZayaStartupApp> {
 Future<void> bootstrapServices() async {
   await configureDependencies();
   try {
-    await Firebase.initializeApp().timeout(const Duration(seconds: 3));
+    if (Firebase.apps.isEmpty) {
+      await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+    }
   } catch (_) {}
   try {
-    await sl<PushBootstrap>().init().timeout(const Duration(seconds: 3));
+    sl<PushBootstrap>().onOpenRoute = (path) => AppRouter.router.push(path);
+    await sl<PushBootstrap>().init();
   } catch (_) {}
   sl<AuthBloc>().add(const AuthEvent.started());
   sl<CallBloc>().add(const CallEvent.started());

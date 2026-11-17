@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/config/browse_country.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/brand_mark.dart';
 import '../../../../core/widgets/language_picker.dart';
+import '../../../cart/cart_icon_button.dart';
+import '../../../notifications/presentation/widgets/notification_bell_button.dart';
 import '../../../../core/widgets/zaya_chrome.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../cars/presentation/cubit/cars_cubit.dart';
@@ -22,15 +26,21 @@ class CustomerHomePage extends StatelessWidget {
     final chips = [
       (l10n.venues, '/customer/venues', Icons.apartment_outlined),
       (l10n.vendors, '/customer/vendors', Icons.storefront_outlined),
+      (l10n.services, '/customer/listings', Icons.auto_awesome_outlined),
       (l10n.cars, '/customer/cars', Icons.directions_car_outlined),
       (l10n.accommodations, '/customer/stays', Icons.hotel_outlined),
       (l10n.honeymoon, '/customer/honeymoon', Icons.favorite_outline),
+      (l10n.flights, '/customer/flights', Icons.flight_takeoff_outlined),
+      (l10n.hotels, '/customer/hotels', Icons.apartment),
+      (l10n.cart, '/customer/cart', Icons.shopping_bag_outlined),
       (l10n.bookings, '/customer/bookings', Icons.receipt_long_outlined),
+      (l10n.venueVisits, '/customer/visits', Icons.meeting_room_outlined),
+      (l10n.aiPlanner, '/customer/ai', Icons.auto_awesome),
     ];
     return MultiBlocProvider(
       providers: [
-        BlocProvider(create: (_) => sl<VenuesCubit>()..load()),
-        BlocProvider(create: (_) => sl<CarsCubit>()..load()),
+        BlocProvider(create: (_) => sl<VenuesCubit>()..load(query: browseQuery())),
+        BlocProvider(create: (_) => sl<CarsCubit>()..load(query: browseQuery())),
         BlocProvider(create: (_) => sl<BannersCubit>()..load()),
       ],
       child: Scaffold(
@@ -46,16 +56,11 @@ class CustomerHomePage extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        const Text(
-                          'ZAYA',
-                          style: TextStyle(color: AppTheme.yellow, fontWeight: FontWeight.w800, letterSpacing: 2),
-                        ),
+                        const BrandMark(size: 36),
                         const Spacer(),
                         const LanguageHeaderActions(),
-                        IconButton(
-                          onPressed: () => context.push('/notifications'),
-                          icon: const Icon(Icons.notifications_none, color: Colors.white),
-                        ),
+                        const CartIconButton(),
+                        const NotificationBellButton(),
                       ],
                     ),
                     const SizedBox(height: 10),

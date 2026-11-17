@@ -31,4 +31,72 @@ export const COUNTRIES = [
   { code: 'MY', name: 'Malaysia' },
 ] as const;
 
-export const APP_CURRENCIES = ['AED', 'SAR', 'QAR', 'KWD', 'BHD', 'OMR', 'JOD', 'EGP', 'USD', 'EUR', 'GBP'] as const;
+export const APP_CURRENCIES = [
+  'AED',
+  'SAR',
+  'QAR',
+  'KWD',
+  'BHD',
+  'OMR',
+  'JOD',
+  'EGP',
+  'LBP',
+  'IQD',
+  'ILS',
+  'TRY',
+  'GBP',
+  'USD',
+  'INR',
+  'PKR',
+  'PHP',
+  'CNY',
+  'EUR',
+  'CAD',
+  'AUD',
+  'KES',
+  'NGN',
+  'ZAR',
+  'MAD',
+  'SGD',
+  'MYR',
+] as const;
+
+export const COUNTRY_CURRENCY: Record<string, string> = {
+  AE: 'AED',
+  SA: 'SAR',
+  QA: 'QAR',
+  KW: 'KWD',
+  BH: 'BHD',
+  OM: 'OMR',
+  JO: 'JOD',
+  EG: 'EGP',
+  LB: 'LBP',
+  IQ: 'IQD',
+  PS: 'ILS',
+  TR: 'TRY',
+  GB: 'GBP',
+  US: 'USD',
+  IN: 'INR',
+  PK: 'PKR',
+  PH: 'PHP',
+  CN: 'CNY',
+  FR: 'EUR',
+  DE: 'EUR',
+  IT: 'EUR',
+  ES: 'EUR',
+  CA: 'CAD',
+  AU: 'AUD',
+  KE: 'KES',
+  NG: 'NGN',
+  ZA: 'ZAR',
+  MA: 'MAD',
+  SG: 'SGD',
+  MY: 'MYR',
+};
+
+export function currencyForCountry(country?: string | null, fallback = 'AED'): string {
+  if (!country) {
+    return fallback;
+  }
+  return COUNTRY_CURRENCY[country] ?? fallback;
+}

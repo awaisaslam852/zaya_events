@@ -13,7 +13,7 @@ import { LocalizedFields } from '@/components/LocalizedFields';
 import { FileUpload, GalleryUpload } from '@/components/FileUpload';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
 
@@ -56,11 +56,14 @@ export function HoneymoonPage() {
 
   return (
     <div className="space-y-8">
-      <ListToolbar title={t('nav.honeymoon')} subtitle="Packages and destination inquiries from guests." search={q} onSearch={setQ} page={page} pageCount={list.data?.pageCount ?? 1} onPage={setPage} extra={
+      <ListToolbar title={t('nav.honeymoon')} subtitle={t('pages.honeymoon')} search={q} onSearch={setQ} page={page} pageCount={list.data?.pageCount ?? 1} onPage={setPage} extra={
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild><Button>{t('common.create')}</Button></DialogTrigger>
           <DialogContent>
-            <DialogHeader><DialogTitle>{t('common.create')}</DialogTitle></DialogHeader>
+            <DialogHeader>
+              <DialogTitle>{t('common.create')}</DialogTitle>
+              <DialogDescription>{t('pages.honeymoon')}</DialogDescription>
+            </DialogHeader>
             <FormProvider {...form}>
               <form className="space-y-3" onSubmit={form.handleSubmit((v) => create.mutate(v))}>
                 <LocalizedFields name="name" />
@@ -68,7 +71,7 @@ export function HoneymoonPage() {
                 <LocalizedFields name="destination" />
                 <Input type="number" {...form.register('nights')} />
                 <Input type="number" {...form.register('priceAmount')} />
-                <FileUpload label="Cover" folder="honeymoon" onUploaded={(f) => form.setValue('coverKey', f.url || f.key)} />
+                <FileUpload label={t('common.cover')} folder="honeymoon" onUploaded={(f) => form.setValue('coverKey', f.url || f.key)} />
                 <GalleryUpload
                   label={t('common.photos')}
                   folder="honeymoon"
@@ -80,7 +83,10 @@ export function HoneymoonPage() {
                     }
                   }}
                 />
-                <Button type="submit">{t('common.save')}</Button>
+                <DialogFooter>
+                  <Button type="button" variant="outline" onClick={() => setOpen(false)}>{t('common.cancel')}</Button>
+                  <Button type="submit">{t('common.save')}</Button>
+                </DialogFooter>
               </form>
             </FormProvider>
           </DialogContent>

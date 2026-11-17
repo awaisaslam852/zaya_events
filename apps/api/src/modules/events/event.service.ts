@@ -1,5 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { Role, type Prisma } from '@prisma/client';
+import { adminScope, assertCountryAllowed, assignableCountry, viaEventCountry } from '../../lib/admin-scope.js';
+import type { AuthUser } from '../../middleware/auth.js';
 import { ForbiddenError, NotFoundError } from '../../lib/errors.js';
 import { notDeleted, paginated, skipTake } from '../../lib/common.js';
 import { eventCategoryRepository } from '../event-categories/event-category.repository.js';
@@ -44,18 +46,18 @@ function hub(event: Awaited<ReturnType<typeof eventRepository.findById>>) {
   };
 }
 
-function scope(userId: string, role: Role): Prisma.EventWhereInput {
+function scope(userId: string, role: Role, actor?: AuthUser): Prisma.EventWhereInput {
   if (role === Role.ADMIN) {
-    return notDeleted;
+    return { ...notDeleted, ...viaEventCountry(adminScope(actor)) };
   }
   return { customerId: userId, ...notDeleted };
 }
 
 export const eventService = {
-  async list(userId: string, role: Role, query: z.infer<typeof eventListQuery>) {
+  async list(userId: string, role: Role, query: z.infer<typeof eventListQuery>, actor?: AuthUser) {
     const { skip, take } = skipTake(query);
     const where: Prisma.EventWhereInput = {
-      ...scope(userId, role),
+      ...scope(userId, role, actor),
       ...(query.status ? { status: query.status } : {}),
       ...(query.categoryId ? { categoryId: query.categoryId } : {}),
       ...(query.customerId && role === Role.ADMIN ? { customerId: query.customerId } : {}),
@@ -63,13 +65,16 @@ export const eventService = {
     const [items, total] = await eventRepository.list(where, skip, take);
     return paginated(items, total, query);
   },
-  async get(userId: string, role: Role, id: string) {
+  async get(userId: string, role: Role, id: string, actor?: AuthUser) {
     const row = await eventRepository.findById(id);
     if (!row) {
       throw new NotFoundError('Event not found');
     }
     if (role !== Role.ADMIN && row.customerId !== userId) {
       throw new ForbiddenError();
+    }
+    if (role === Role.ADMIN) {
+      assertCountryAllowed(adminScope(actor), row.country ?? row.customer.country);
     }
     return hub(row);
   },
@@ -97,17 +102,20 @@ export const eventService = {
       checklist: input.checklist ?? defaultChecklist(),
     });
   },
-  async update(userId: string, role: Role, id: string, input: z.infer<typeof eventPatch>) {
-    await this.get(userId, role, id);
+  async update(userId: string, role: Role, id: string, input: z.infer<typeof eventPatch>, actor?: AuthUser) {
+    await this.get(userId, role, id, actor);
     const { categoryId, ...rest } = input;
+    if (rest.country !== undefined) {
+      rest.country = assignableCountry(adminScope(actor), rest.country);
+    }
     await eventRepository.update(id, {
       ...rest,
       ...(categoryId ? { category: { connect: { id: categoryId } } } : {}),
     });
-    return this.get(userId, role, id);
+    return this.get(userId, role, id, actor);
   },
-  async remove(userId: string, role: Role, id: string) {
-    await this.get(userId, role, id);
+  async remove(userId: string, role: Role, id: string, actor?: AuthUser) {
+    await this.get(userId, role, id, actor);
     await eventRepository.update(id, { deletedAt: new Date() });
     return { deleted: true };
   },

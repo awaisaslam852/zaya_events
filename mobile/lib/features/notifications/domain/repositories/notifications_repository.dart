@@ -6,5 +6,6 @@ import '../entities/notifications_item.dart';
 abstract class NotificationsRepository {
   Future<Either<Failure, Paginated<NotificationsItem>>> list({int page = 1, Map<String, dynamic>? query});
   Future<Either<Failure, NotificationsItem>> getById(String id);
-
+  Future<Either<Failure, bool>> markRead(String id);
+  Future<Either<Failure, bool>> markAllRead();
 }

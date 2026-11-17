@@ -12,13 +12,14 @@ import type {
 
 export const vendorController = {
   list: handle(async (req, res) => {
-    sendSuccess(res, await vendorService.list(actor(req).role, req.query as unknown as z.infer<typeof vendorListQuery>));
+    const user = actor(req);
+    sendSuccess(res, await vendorService.list(user.role, req.query as unknown as z.infer<typeof vendorListQuery>, user));
   }),
   create: handle(async (req, res) => {
-    sendSuccess(res, await vendorService.createByAdmin(req.body as z.infer<typeof vendorAdminCreateSchema>), 201);
+    sendSuccess(res, await vendorService.createByAdmin(req.body as z.infer<typeof vendorAdminCreateSchema>, actor(req)), 201);
   }),
   get: handle(async (req, res) => {
-    sendSuccess(res, await vendorService.get(String(req.params.id)));
+    sendSuccess(res, await vendorService.get(String(req.params.id), actor(req)));
   }),
   me: handle(async (req, res) => {
     const user = actor(req);
@@ -41,17 +42,17 @@ export const vendorController = {
     const user = actor(req);
     sendSuccess(
       res,
-      await vendorService.updateProfile(user.id, user.role, String(req.params.id), req.body as z.infer<typeof vendorProfilePatch>),
+      await vendorService.updateProfile(user.id, user.role, String(req.params.id), req.body as z.infer<typeof vendorProfilePatch>, user),
     );
   }),
   approve: handle(async (req, res) => {
-    sendSuccess(res, await vendorService.approve(String(req.params.id)));
+    sendSuccess(res, await vendorService.approve(String(req.params.id), actor(req)));
   }),
   reject: handle(async (req, res) => {
     const body = req.body as z.infer<typeof vendorDecisionSchema>;
-    sendSuccess(res, await vendorService.reject(String(req.params.id), body.reason));
+    sendSuccess(res, await vendorService.reject(String(req.params.id), body.reason, actor(req)));
   }),
   remove: handle(async (req, res) => {
-    sendSuccess(res, await vendorService.remove(String(req.params.id)));
+    sendSuccess(res, await vendorService.remove(String(req.params.id), actor(req)));
   }),
 };

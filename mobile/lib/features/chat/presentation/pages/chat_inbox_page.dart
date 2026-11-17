@@ -2,12 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/di/injection.dart';
+import '../../../../core/sync/app_refresh.dart';
+import '../../../../core/sync/screen_sync.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/async_body.dart';
+import '../../../../core/widgets/property_card.dart';
 import '../../../../core/widgets/screen_header.dart';
+import '../../../../core/widgets/zaya_avatar.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
+import '../../conversation_inbox.dart';
 import '../../domain/chat_usecases.dart';
 import '../cubit/chat_cubit.dart';
 
@@ -20,7 +25,10 @@ class ChatInboxPage extends StatelessWidget {
     final myId = context.read<AuthBloc>().state.maybeWhen(authenticated: (user) => user.id, orElse: () => '');
     return BlocProvider(
       create: (_) => sl<ChatCubit>()..loadInbox(),
-      child: Scaffold(
+      child: ScreenSync(
+        topics: const [AppRefreshTopic.chat],
+        onRefresh: (context) => context.read<ChatCubit>().loadInbox(silent: true),
+        child: Scaffold(
         backgroundColor: AppTheme.canvas,
         body: Column(
           children: [
@@ -51,29 +59,36 @@ class ChatInboxPage extends StatelessWidget {
             Expanded(
               child: BlocBuilder<ChatCubit, ChatState>(
                 builder: (context, state) {
+                  final conversations = uniqueConversationsByPeer(state.conversations, myId);
                   return AsyncBody(
                     loading: state.loading,
                     error: state.error,
-                    empty: state.conversations.isEmpty,
+                    empty: conversations.isEmpty,
                     emptyIcon: Icons.chat_bubble_outline,
                     emptyTitle: l10n.noConversations,
                     emptyMessage: 'Enquiries and vendor replies will show up here.',
                     onRetry: () => context.read<ChatCubit>().loadInbox(),
                     child: ListView.separated(
                       padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-                      itemCount: state.conversations.length,
+                      itemCount: conversations.length,
                       separatorBuilder: (_, _) => const SizedBox(height: 10),
                       itemBuilder: (context, index) {
-                        final item = state.conversations[index];
-                        final name = _peerName(item, myId);
-                        final initial = name.isEmpty ? '?' : name.substring(0, 1).toUpperCase();
+                        final item = conversations[index];
+                        final name = conversationPeerName(item, myId);
+                        final imageKey = conversationPeerImageKey(item, myId);
                         return Card(
                           child: ListTile(
-                            onTap: () => context.push('/chat/${item['id']}'),
+                            onTap: () async {
+                              await context.push('/chat/${item['id']}');
+                              if (context.mounted) {
+                                context.read<ChatCubit>().loadInbox(silent: true);
+                              }
+                            },
                             contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                            leading: CircleAvatar(
-                              backgroundColor: AppTheme.navy,
-                              child: Text(initial, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
+                            leading: ZayaAvatar(
+                              url: imageKey == null ? null : resolveMediaUrl(imageKey),
+                              initials: conversationPeerInitials(item, myId),
+                              radius: 22,
                             ),
                             title: Text(name.isEmpty ? 'Conversation' : name, style: const TextStyle(fontWeight: FontWeight.w800)),
                             subtitle: Text(
@@ -93,16 +108,7 @@ class ChatInboxPage extends StatelessWidget {
           ],
         ),
       ),
+      ),
     );
-  }
-
-  static String _peerName(Map<String, dynamic> item, String myId) {
-    final a = item['participantA'];
-    final b = item['participantB'];
-    final peer = a is Map && a['id']?.toString() == myId ? b : a;
-    if (peer is Map) {
-      return '${peer['firstName'] ?? ''} ${peer['lastName'] ?? ''}'.trim();
-    }
-    return '';
   }
 }

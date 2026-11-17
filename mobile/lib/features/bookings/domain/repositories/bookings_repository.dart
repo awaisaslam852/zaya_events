@@ -10,4 +10,5 @@ abstract class BookingsRepository {
   Future<Either<Failure, BookingsItem>> cancel(String id);
   Future<Either<Failure, Map<String, dynamic>>> createPaymentIntent(String bookingId, String kind);
   Future<Either<Failure, Map<String, dynamic>>> confirmPayment(String paymentId);
+  Future<Either<Failure, Map<String, dynamic>>> createReview(String bookingId, Map<String, dynamic> body);
 }

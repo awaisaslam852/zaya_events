@@ -14,7 +14,7 @@ export const registerSchema = z
     lastName: z.string().min(1).max(80),
     phone: z
       .string()
-      .max(20)
+      .max(32)
       .optional()
       .transform((value) => {
         const trimmed = value?.trim();
@@ -26,16 +26,23 @@ export const registerSchema = z
     businessName: localized.optional(),
     description: localized.optional(),
     city: z.string().min(1).max(80).optional(),
-    legalName: z.string().min(1).max(160).optional(),
-    taxId: z.string().min(1).max(80).optional(),
-    website: z
+    legalName: z.string().max(160).optional(),
+    taxId: z
       .string()
+      .max(80)
       .optional()
       .transform((value) => {
         const trimmed = value?.trim();
         return trimmed ? trimmed : undefined;
-      })
-      .pipe(z.string().url().optional()),
+      }),
+    website: z
+      .string()
+      .max(200)
+      .optional()
+      .transform((value) => {
+        const trimmed = value?.trim();
+        return trimmed ? trimmed : undefined;
+      }),
   })
   .superRefine((value, ctx) => {
     if (value.role !== 'vendor') {
@@ -50,9 +57,6 @@ export const registerSchema = z
     }
     if (!value.city) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['city'], message: 'Vendor registration requires city' });
-    }
-    if (!value.legalName) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['legalName'], message: 'Vendor registration requires legalName' });
     }
     if (!value.phone || value.phone.length < 8) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['phone'], message: 'Vendor registration requires phone' });

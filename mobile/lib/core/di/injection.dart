@@ -22,12 +22,15 @@ import '../../features/auth/domain/repositories/auth_repository.dart';
 import '../../features/auth/domain/usecases/auth_usecases.dart';
 import '../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../features/auth/presentation/bloc/auth_event.dart';
+import '../../features/auth/presentation/bloc/auth_state.dart';
 import '../../features/availability_calendar/domain/availability_usecases.dart';
 import '../../features/booking_requests/domain/booking_requests_usecases.dart';
 import '../../features/bookings/data/repositories/bookings_repository_impl.dart';
 import '../../features/bookings/domain/repositories/bookings_repository.dart';
 import '../../features/bookings/domain/usecases/bookings_usecases.dart';
 import '../../features/bookings/presentation/cubit/bookings_cubit.dart';
+import '../../features/cart/cart_cubit.dart';
+import '../../features/cart/cart_repository.dart';
 import '../../features/calls/data/repositories/call_repository_impl.dart';
 import '../../features/calls/domain/repositories/call_repository.dart';
 import '../../features/calls/domain/usecases/call_usecases.dart';
@@ -62,11 +65,14 @@ import '../../features/hotels/domain/usecases/hotels_usecases.dart';
 import '../../features/hotels/presentation/cubit/hotels_cubit.dart';
 import '../../features/listings/domain/listings_usecases.dart';
 import '../../features/listings/presentation/cubit/listings_cubit.dart';
+import '../../features/vendor_catalog/vendor_catalog_cubit.dart';
+import '../../features/vendor_catalog/vendor_catalog_repository.dart';
 import '../../features/notifications/data/repositories/notifications_repository_impl.dart';
 import '../../features/notifications/domain/repositories/notifications_repository.dart';
 import '../../features/notifications/domain/usecases/notifications_usecases.dart';
 import '../../features/notifications/domain/usecases/register_device.dart';
 import '../../features/notifications/presentation/cubit/notifications_cubit.dart';
+import '../../features/notifications/presentation/cubit/unread_notifications_cubit.dart';
 import '../../features/settings/presentation/cubit/locale_cubit.dart';
 import '../../features/uploads/data/repositories/upload_repository_impl.dart';
 import '../../features/uploads/domain/repositories/upload_repository.dart';
@@ -93,14 +99,19 @@ Future<void> configureDependencies() async {
   if (sl.isRegistered<AuthBloc>()) {
     return;
   }
-  final prefs = await SharedPreferences.getInstance().timeout(const Duration(seconds: 5));
+  final prefs = await SharedPreferences.getInstance().timeout(
+    const Duration(seconds: 5),
+  );
   sl.registerSingleton(prefs);
-  sl.registerSingleton(await AppConfig.resolve(prefsOverride: prefs.getString(AppConfig.prefsOverrideKey)));
+  sl.registerSingleton(
+    await AppConfig.resolve(
+      prefsOverride: prefs.getString(AppConfig.prefsOverrideKey),
+    ),
+  );
   sl.registerSingleton(
     const FlutterSecureStorage(
       aOptions: AndroidOptions(
         encryptedSharedPreferences: true,
-        resetOnError: true,
       ),
     ),
   );
@@ -115,12 +126,23 @@ Future<void> configureDependencies() async {
   sl.registerSingleton(AppSettings());
   unawaited(sl<AppSettings>().refresh(sl()));
   sl<AuthInterceptor>().onForceLogout = () {
-    if (sl.isRegistered<AuthBloc>()) {
-      sl<AuthBloc>().add(const AuthEvent.logout());
+    if (!sl.isRegistered<AuthBloc>()) {
+      return;
+    }
+    final auth = sl<AuthBloc>();
+    final signedIn = auth.state.maybeWhen(
+      authenticated: (_) => true,
+      adminRedirect: (_) => true,
+      orElse: () => false,
+    );
+    if (signedIn) {
+      auth.add(const AuthEvent.logout());
     }
   };
 
-  sl.registerLazySingleton<AuthRepository>(() => AuthRepositoryImpl(sl(), sl()));
+  sl.registerLazySingleton<AuthRepository>(
+    () => AuthRepositoryImpl(sl(), sl()),
+  );
   sl.registerFactory(() => LoginUseCase(sl()));
   sl.registerFactory(() => RegisterUseCase(sl()));
   sl.registerFactory(() => RestoreSessionUseCase(sl()));
@@ -130,7 +152,13 @@ Future<void> configureDependencies() async {
   sl.registerFactory(() => ResetPasswordUseCase(sl()));
   sl.registerFactory(() => UpdateProfileUseCase(sl()));
   sl.registerLazySingleton(
-    () => AuthBloc(login: sl(), register: sl(), restore: sl(), logout: sl(), sockets: sl()),
+    () => AuthBloc(
+      login: sl(),
+      register: sl(),
+      restore: sl(),
+      logout: sl(),
+      sockets: sl(),
+    ),
   );
 
   sl.registerLazySingleton<UploadRepository>(() => UploadRepositoryImpl(sl()));
@@ -160,7 +188,12 @@ Future<void> configureDependencies() async {
     ),
   );
   sl.registerLazySingleton(
-    () => PushBootstrap(messaging: sl(), local: sl(), callBloc: sl(), registerDevice: sl()),
+    () => PushBootstrap(
+      messaging: sl(),
+      local: sl(),
+      callBloc: sl(),
+      registerDevice: sl(),
+    ),
   );
 
   sl.registerLazySingleton(() => ChatRepository(sl()));
@@ -182,7 +215,9 @@ Future<void> configureDependencies() async {
   sl.registerFactory(() => GetVenues(sl()));
   sl.registerFactory(() => VenuesCubit(sl(), sl()));
 
-  sl.registerLazySingleton<VendorsRepository>(() => VendorsRepositoryImpl(sl()));
+  sl.registerLazySingleton<VendorsRepository>(
+    () => VendorsRepositoryImpl(sl()),
+  );
   sl.registerFactory(() => ListVendors(sl()));
   sl.registerFactory(() => GetVendors(sl()));
   sl.registerFactory(() => VendorsCubit(sl(), sl()));
@@ -192,17 +227,23 @@ Future<void> configureDependencies() async {
   sl.registerFactory(() => GetCars(sl()));
   sl.registerFactory(() => CarsCubit(sl(), sl()));
 
-  sl.registerLazySingleton<AccommodationsRepository>(() => AccommodationsRepositoryImpl(sl()));
+  sl.registerLazySingleton<AccommodationsRepository>(
+    () => AccommodationsRepositoryImpl(sl()),
+  );
   sl.registerFactory(() => ListAccommodations(sl()));
   sl.registerFactory(() => GetAccommodations(sl()));
   sl.registerFactory(() => AccommodationsCubit(sl(), sl()));
 
-  sl.registerLazySingleton<HoneymoonRepository>(() => HoneymoonRepositoryImpl(sl()));
+  sl.registerLazySingleton<HoneymoonRepository>(
+    () => HoneymoonRepositoryImpl(sl()),
+  );
   sl.registerFactory(() => ListHoneymoon(sl()));
   sl.registerFactory(() => GetHoneymoon(sl()));
   sl.registerFactory(() => HoneymoonCubit(sl(), sl()));
 
-  sl.registerLazySingleton<FlightsRepository>(() => FlightsRepositoryImpl(sl()));
+  sl.registerLazySingleton<FlightsRepository>(
+    () => FlightsRepositoryImpl(sl()),
+  );
   sl.registerFactory(() => ListFlights(sl()));
   sl.registerFactory(() => GetFlights(sl()));
   sl.registerFactory(() => InquireFlights(sl()));
@@ -221,38 +262,56 @@ Future<void> configureDependencies() async {
   sl.registerFactory(() => UpdateEvent(sl()));
   sl.registerFactory(() => EventsCubit(sl(), sl(), sl(), sl()));
 
-  sl.registerLazySingleton<BookingsRepository>(() => BookingsRepositoryImpl(sl()));
+  sl.registerLazySingleton<BookingsRepository>(
+    () => BookingsRepositoryImpl(sl()),
+  );
   sl.registerFactory(() => ListBookings(sl()));
   sl.registerFactory(() => GetBookings(sl()));
   sl.registerFactory(() => ModifyBooking(sl()));
   sl.registerFactory(() => CancelBooking(sl()));
   sl.registerFactory(() => CreateBookingPayment(sl()));
   sl.registerFactory(() => ConfirmBookingPayment(sl()));
-  sl.registerFactory(() => BookingsCubit(sl(), sl(), sl(), sl(), sl(), sl()));
+  sl.registerFactory(() => CreateBookingReview(sl()));
+  sl.registerFactory(() => BookingsCubit(sl(), sl(), sl(), sl(), sl(), sl(), sl(), sl()));
+
+  sl.registerLazySingleton(() => CartRepository(sl()));
+  sl.registerLazySingleton(() => CartCubit(sl()));
 
   sl.registerLazySingleton<VisitsRepository>(() => VisitsRepositoryImpl(sl()));
   sl.registerFactory(() => ListVisits(sl()));
   sl.registerFactory(() => GetVisits(sl()));
   sl.registerFactory(() => CancelVisit(sl()));
   sl.registerFactory(() => DecideVisit(sl()));
-  sl.registerFactory(() => VisitsCubit(sl(), sl(), sl(), sl()));
+  sl.registerFactory(() => ApproveVisit(sl()));
+  sl.registerFactory(() => CompleteVisit(sl()));
+  sl.registerFactory(() => VisitsCubit(sl(), sl(), sl(), sl(), sl(), sl()));
 
-  sl.registerLazySingleton<FavoritesRepository>(() => FavoritesRepositoryImpl(sl()));
+  sl.registerLazySingleton<FavoritesRepository>(
+    () => FavoritesRepositoryImpl(sl()),
+  );
   sl.registerFactory(() => ListFavorites(sl()));
   sl.registerFactory(() => GetFavorites(sl()));
-  sl.registerFactory(() => FavoritesCubit(sl(), sl()));
+  sl.registerFactory(() => RemoveFavorite(sl()));
+  sl.registerFactory(() => FavoritesCubit(sl(), sl(), sl()));
 
-  sl.registerLazySingleton<NotificationsRepository>(() => NotificationsRepositoryImpl(sl()));
+  sl.registerLazySingleton<NotificationsRepository>(
+    () => NotificationsRepositoryImpl(sl()),
+  );
   sl.registerFactory(() => ListNotifications(sl()));
   sl.registerFactory(() => GetNotifications(sl()));
-  sl.registerFactory(() => NotificationsCubit(sl(), sl()));
+  sl.registerFactory(() => MarkNotificationRead(sl()));
+  sl.registerFactory(() => MarkAllNotificationsRead(sl()));
+  sl.registerFactory(() => NotificationsCubit(sl(), sl(), sl(), sl()));
+  sl.registerLazySingleton(() => UnreadNotificationsCubit(sl()));
 
   sl.registerLazySingleton(() => VendorDashboardRepository(sl()));
   sl.registerFactory(() => GetVendorMe(sl()));
   sl.registerFactory(() => GetVendorEarnings(sl()));
   sl.registerFactory(() => GetVendorReviews(sl()));
   sl.registerFactory(() => UpdateVendorProfile(sl()));
-  sl.registerFactory(() => VendorDashboardCubit(sl(), sl(), sl()));
+  sl.registerFactory(() => VendorDashboardCubit(sl(), sl(), sl(), sl()));
+  sl.registerLazySingleton(() => VendorCatalogRepository(sl()));
+  sl.registerFactory(() => VendorCatalogCubit(sl()));
 
   sl.registerLazySingleton(() => ListingsRepository(sl()));
   sl.registerFactory(() => ListVendorListings(sl()));

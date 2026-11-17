@@ -12,9 +12,11 @@ export function setAppCurrency(code: string): void {
   }
 }
 
-export async function loadAppCurrency(): Promise<string> {
+export async function loadAppCurrency(country?: string | null): Promise<string> {
   try {
-    const data = await unwrap<{ currency?: string }>(api.get('/api/v1/settings/public'));
+    const data = await unwrap<{ currency?: string }>(
+      api.get('/api/v1/settings/public', { params: country ? { country } : {} }),
+    );
     if (data.currency) {
       setAppCurrency(data.currency);
     }

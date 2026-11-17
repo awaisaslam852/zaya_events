@@ -4,7 +4,12 @@ import '../../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 
 class NavItem {
-  const NavItem({required this.path, required this.icon, required this.activeIcon, required this.label});
+  const NavItem({
+    required this.path,
+    required this.icon,
+    required this.activeIcon,
+    required this.label,
+  });
   final String path;
   final IconData icon;
   final IconData activeIcon;
@@ -13,27 +18,77 @@ class NavItem {
 
 List<NavItem> customerNavItems(AppLocalizations l10n) {
   return [
-    NavItem(path: '/customer/home', icon: Icons.home_outlined, activeIcon: Icons.home_rounded, label: l10n.home),
-    NavItem(path: '/customer/events', icon: Icons.celebration_outlined, activeIcon: Icons.celebration, label: l10n.myEvents),
-    NavItem(path: '/customer/chat', icon: Icons.chat_bubble_outline_rounded, activeIcon: Icons.chat_bubble_rounded, label: l10n.chat),
-    NavItem(path: '/customer/favorites', icon: Icons.favorite_border_rounded, activeIcon: Icons.favorite_rounded, label: l10n.favorites),
-    NavItem(path: '/customer/profile', icon: Icons.person_outline_rounded, activeIcon: Icons.person_rounded, label: l10n.profile),
+    NavItem(
+      path: '/customer/home',
+      icon: Icons.home_outlined,
+      activeIcon: Icons.home_rounded,
+      label: l10n.home,
+    ),
+    NavItem(
+      path: '/customer/bookings',
+      icon: Icons.receipt_long_outlined,
+      activeIcon: Icons.receipt_long_rounded,
+      label: l10n.myBookings,
+    ),
+    NavItem(
+      path: '/customer/chat',
+      icon: Icons.chat_bubble_outline_rounded,
+      activeIcon: Icons.chat_bubble_rounded,
+      label: l10n.chat,
+    ),
+    NavItem(
+      path: '/customer/favorites',
+      icon: Icons.favorite_border_rounded,
+      activeIcon: Icons.favorite_rounded,
+      label: l10n.favorites,
+    ),
+    NavItem(
+      path: '/customer/profile',
+      icon: Icons.person_outline_rounded,
+      activeIcon: Icons.person_rounded,
+      label: l10n.profile,
+    ),
   ];
 }
 
 List<NavItem> vendorNavItems(AppLocalizations l10n) {
   return [
-    NavItem(path: '/vendor/dashboard', icon: Icons.dashboard_outlined, activeIcon: Icons.dashboard_rounded, label: l10n.dashboard),
-    NavItem(path: '/vendor/listings', icon: Icons.storefront_outlined, activeIcon: Icons.storefront_rounded, label: l10n.listings),
-    NavItem(path: '/vendor/requests', icon: Icons.inbox_outlined, activeIcon: Icons.inbox_rounded, label: l10n.requests),
-    NavItem(path: '/vendor/chat', icon: Icons.chat_bubble_outline_rounded, activeIcon: Icons.chat_bubble_rounded, label: l10n.chat),
-    NavItem(path: '/vendor/profile', icon: Icons.person_outline_rounded, activeIcon: Icons.person_rounded, label: l10n.profile),
+    NavItem(
+      path: '/vendor/dashboard',
+      icon: Icons.dashboard_outlined,
+      activeIcon: Icons.dashboard_rounded,
+      label: l10n.dashboard,
+    ),
+    NavItem(
+      path: '/vendor/listings',
+      icon: Icons.storefront_outlined,
+      activeIcon: Icons.storefront_rounded,
+      label: l10n.myCatalog,
+    ),
+    NavItem(
+      path: '/vendor/requests',
+      icon: Icons.inbox_outlined,
+      activeIcon: Icons.inbox_rounded,
+      label: l10n.requests,
+    ),
+    NavItem(
+      path: '/vendor/chat',
+      icon: Icons.chat_bubble_outline_rounded,
+      activeIcon: Icons.chat_bubble_rounded,
+      label: l10n.chat,
+    ),
+    NavItem(
+      path: '/vendor/profile',
+      icon: Icons.person_outline_rounded,
+      activeIcon: Icons.person_rounded,
+      label: l10n.profile,
+    ),
   ];
 }
 
 const customerTabPaths = [
   '/customer/home',
-  '/customer/events',
+  '/customer/bookings',
   '/customer/chat',
   '/customer/favorites',
   '/customer/profile',
@@ -59,7 +114,9 @@ String homePathForRole(AppRole role) {
 }
 
 int tabIndexForPath(String location, List<String> tabPaths) {
-  final index = tabPaths.indexWhere((path) => location == path || location.startsWith('$path/'));
+  final index = tabPaths.indexWhere(
+    (path) => location == path || location.startsWith('$path/'),
+  );
   return index < 0 ? 0 : index;
 }
 
@@ -78,7 +135,9 @@ class RoleNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final items = role == AppRole.vendor ? vendorNavItems(l10n) : customerNavItems(l10n);
+    final items = role == AppRole.vendor
+        ? vendorNavItems(l10n)
+        : customerNavItems(l10n);
     final safeIndex = selectedIndex.clamp(0, items.length - 1);
     return Material(
       color: Colors.white,
@@ -107,7 +166,11 @@ class RoleNavBar extends StatelessWidget {
 }
 
 class _TabButton extends StatelessWidget {
-  const _TabButton({required this.item, required this.selected, required this.onTap});
+  const _TabButton({
+    required this.item,
+    required this.selected,
+    required this.onTap,
+  });
 
   final NavItem item;
   final bool selected;

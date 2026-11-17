@@ -5,6 +5,7 @@ export const listingListQuery = paginationQuerySchema.extend({
   categoryId: z.string().uuid().optional(),
   vendorId: z.string().uuid().optional(),
   city: z.string().optional(),
+  country: z.string().length(2).optional(),
   published: z.enum(['true', 'false']).optional(),
 });
 
@@ -23,7 +24,7 @@ export const listingBody = z.object({
   description: localizedString,
   city: z.string().optional(),
   country: z.string().optional(),
-  coverKey: z.string().optional(),
+  coverKey: z.string().nullish(),
   galleryKeys: z.array(z.string()).optional().default([]),
   startingPrice: z.coerce.number().nonnegative(),
   currency: z.string().length(3).default('AED'),

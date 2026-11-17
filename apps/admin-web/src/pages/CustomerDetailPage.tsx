@@ -4,7 +4,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { api, unwrap } from '@/lib/api';
-import { COUNTRIES } from '@/lib/countries';
+import { assignableCountries } from '@/lib/countries';
 import { loc, mediaUrl, money } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { StatusBadge } from '@/components/StatusBadge';
 import { BackLink, EmptyHint, PersonAvatar, Section, StatTile } from '@/components/AdminChrome';
 import { FileUpload } from '@/components/FileUpload';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 
 type Detail = {
@@ -115,13 +115,13 @@ export function CustomerDetailPage() {
     <div className="space-y-5">
       <BackLink to="/customers" label={t('nav.customers')} />
       <div className="overflow-hidden rounded-3xl border bg-white shadow-sm shadow-blue-900/5">
-        <div className="brand-hero px-6 py-8 text-white">
+        <div className="brand-hero px-4 py-6 text-white sm:px-6 sm:py-8">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="flex items-center gap-4">
               <PersonAvatar first={d.firstName} last={d.lastName} src={d.avatarKey ? mediaUrl(d.avatarKey) : undefined} />
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#FEBB02]">Customer</p>
-                <h1 className="text-3xl font-extrabold">
+                <h1 className="text-2xl font-extrabold sm:text-3xl">
                   {d.firstName} {d.lastName}
                 </h1>
                 <p className="text-white/80">{d.email}</p>
@@ -136,7 +136,7 @@ export function CustomerDetailPage() {
                     firstName: d.firstName,
                     lastName: d.lastName,
                     phone: d.phone ?? '',
-                    country: d.country ?? 'AE',
+                    country: d.country ?? assignableCountries()[0]?.code ?? 'AE',
                     locale: d.locale || 'en',
                     avatarKey: d.avatarKey ?? '',
                     password: '',
@@ -165,17 +165,21 @@ export function CustomerDetailPage() {
             </div>
           </div>
         </div>
-        <div className="grid gap-3 p-5 md:grid-cols-4">
-          <StatTile label="Phone" value={d.phone || '—'} />
-          <StatTile label="Locale" value={d.locale?.toUpperCase() || 'EN'} />
-          <StatTile label="Joined" value={new Date(d.createdAt).toLocaleDateString()} hint={d.lastLoginAt ? `Last login ${new Date(d.lastLoginAt).toLocaleString()}` : 'Never logged in'} />
-          <StatTile label="Paid" value={money(spent)} hint={`${d.bookings.length} bookings`} />
+        <div className="grid grid-cols-2 gap-3 p-4 sm:p-5 lg:grid-cols-4">
+          <StatTile label={t('common.phone')} value={d.phone || '—'} />
+          <StatTile label={t('common.locale')} value={d.locale?.toUpperCase() || 'EN'} />
+          <StatTile
+            label={t('common.joined')}
+            value={new Date(d.createdAt).toLocaleDateString()}
+            hint={d.lastLoginAt ? t('common.lastLoginAt', { when: new Date(d.lastLoginAt).toLocaleString() }) : t('common.neverLoggedIn')}
+          />
+          <StatTile label={t('common.paid')} value={money(spent)} hint={`${d.bookings.length} ${t('nav.bookings')}`} />
         </div>
       </div>
 
       <Section title={`${t('nav.bookings')} (${d.bookings.length})`}>
         {d.bookings.length === 0 ? (
-          <EmptyHint>No bookings yet</EmptyHint>
+          <EmptyHint>{t('common.noBookings')}</EmptyHint>
         ) : (
           <div className="grid gap-2">
             {d.bookings.map((b) => (
@@ -199,7 +203,7 @@ export function CustomerDetailPage() {
       <div className="grid gap-4 lg:grid-cols-2">
         <Section title={`${t('dashboard.events')} (${d.events.length})`}>
           {d.events.length === 0 ? (
-            <EmptyHint>No events</EmptyHint>
+            <EmptyHint>{t('common.noEvents')}</EmptyHint>
           ) : (
             <div className="space-y-2 text-sm">
               {d.events.map((e) => (
@@ -215,7 +219,7 @@ export function CustomerDetailPage() {
         </Section>
         <Section title={`${t('nav.payments')} (${d.payments.length})`}>
           {d.payments.length === 0 ? (
-            <EmptyHint>No payments</EmptyHint>
+            <EmptyHint>{t('common.noPayments')}</EmptyHint>
           ) : (
             <div className="space-y-2 text-sm">
               {d.payments.map((p) => (
@@ -237,7 +241,7 @@ export function CustomerDetailPage() {
       <div className="grid gap-4 lg:grid-cols-2">
         <Section title={`Venue visits (${d.venueVisits?.length ?? 0})`}>
           {(d.venueVisits ?? []).length === 0 ? (
-            <EmptyHint>No visits</EmptyHint>
+            <EmptyHint>{t('common.noVisits')}</EmptyHint>
           ) : (
             <div className="space-y-2 text-sm">
               {d.venueVisits.map((v) => (
@@ -251,7 +255,7 @@ export function CustomerDetailPage() {
         </Section>
         <Section title={`Saved items (${d.favorites?.length ?? 0})`}>
           {(d.favorites ?? []).length === 0 ? (
-            <EmptyHint>No favorites</EmptyHint>
+            <EmptyHint>{t('common.noFavorites')}</EmptyHint>
           ) : (
             <div className="space-y-2 text-sm">
               {d.favorites.map((f) => (
@@ -267,6 +271,7 @@ export function CustomerDetailPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{t('common.edit')}</DialogTitle>
+            <DialogDescription>{t('pages.customers')}</DialogDescription>
           </DialogHeader>
           <form className="space-y-3" onSubmit={form.handleSubmit((v) => save.mutate(v))}>
             <div className="grid gap-3 md:grid-cols-2">
@@ -285,7 +290,7 @@ export function CustomerDetailPage() {
               <div>
                 <Label>{t('common.country')}</Label>
                 <select className="h-10 w-full rounded-md border px-2 text-sm" {...form.register('country')}>
-                  {COUNTRIES.map((row) => (
+                  {assignableCountries().map((row) => (
                     <option key={row.code} value={row.code}>
                       {row.name}
                     </option>
@@ -296,9 +301,14 @@ export function CustomerDetailPage() {
             <FileUpload label={t('common.upload')} folder="avatars" onUploaded={(f) => form.setValue('avatarKey', f.url || f.key)} />
             <div>
               <Label>{t('auth.password')}</Label>
-              <Input type="password" placeholder="Leave blank to keep" {...form.register('password')} />
+              <Input type="password" placeholder={t('staff.passwordOptional')} {...form.register('password')} />
             </div>
-            <Button type="submit">{t('common.save')}</Button>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+                {t('common.cancel')}
+              </Button>
+              <Button type="submit">{t('common.save')}</Button>
+            </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>

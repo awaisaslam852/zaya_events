@@ -37,7 +37,7 @@ export function InvoicesPage() {
     <div>
       <ListToolbar
         title={t('nav.invoices')}
-        subtitle="Tax invoices with 5% VAT inclusive reverse-calc, ready for ERP export."
+        subtitle={t('pages.invoices')}
         search={q}
         onSearch={(v) => {
           setQ(v);
@@ -53,7 +53,7 @@ export function InvoicesPage() {
             <TableRow>
               <TableHead>#</TableHead>
               <TableHead>{t('nav.bookings')}</TableHead>
-              <TableHead>VAT</TableHead>
+              <TableHead>{t('common.vat')}</TableHead>
               <TableHead>{t('common.price')}</TableHead>
               <TableHead>{t('common.status')}</TableHead>
             </TableRow>

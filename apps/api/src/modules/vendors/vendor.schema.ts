@@ -6,18 +6,27 @@ import { COUNTRY_CODES } from '../../lib/countries.js';
 export const vendorListQuery = paginationQuerySchema.extend({
   status: z.nativeEnum(VendorStatus).optional(),
   city: z.string().optional(),
+  country: z.string().length(2).optional(),
   q: z.string().optional(),
 });
+
+const optionalText = z
+  .string()
+  .optional()
+  .transform((value) => {
+    const trimmed = value?.trim();
+    return trimmed ? trimmed : undefined;
+  });
 
 export const vendorApplySchema = z.object({
   businessName: localizedString,
   description: localizedString,
-  legalName: z.string().optional(),
-  taxId: z.string().optional(),
-  city: z.string().optional(),
-  country: z.string().optional(),
-  phone: z.string().optional(),
-  website: z.string().url().optional(),
+  legalName: optionalText,
+  taxId: optionalText,
+  city: optionalText,
+  country: optionalText,
+  phone: optionalText,
+  website: optionalText,
 });
 
 export const vendorProfilePatch = vendorApplySchema.partial().extend({
@@ -47,13 +56,13 @@ export const vendorAdminCreateSchema = z.object({
   password: z.string().min(8).max(72),
   firstName: z.string().min(1).max(80),
   lastName: z.string().min(1).max(80),
-  phone: z.string().min(8).max(20),
+  phone: z.string().min(8).max(32),
   country: z.enum(COUNTRY_CODES).default('AE'),
   locale: z.enum(['en', 'ar']).default('en'),
   city: z.string().min(1).max(80),
-  legalName: z.string().min(1).max(160),
-  taxId: z.string().max(80).optional(),
-  website: z.string().url().optional().or(z.literal('')),
+  legalName: z.string().max(160).optional(),
+  taxId: optionalText,
+  website: optionalText,
   businessName: localizedString,
   description: localizedString.optional(),
 });

@@ -1,5 +1,7 @@
 import { InvoiceStatus, PaymentStatus, Role, type Prisma } from '@prisma/client';
 import { env } from '../../config/env.js';
+import { adminScope, assertCountryAllowed, viaBookingVendorCountry } from '../../lib/admin-scope.js';
+import type { AuthUser } from '../../middleware/auth.js';
 import { ForbiddenError, NotFoundError } from '../../lib/errors.js';
 import { notDeleted, paginated, skipTake } from '../../lib/common.js';
 import { prisma } from '../../lib/prisma.js';
@@ -57,14 +59,14 @@ export const financeService = {
     });
   },
 
-  async list(userId: string, role: Role, query: z.infer<typeof invoiceListQuery>) {
+  async list(userId: string, role: Role, query: z.infer<typeof invoiceListQuery>, actor?: AuthUser) {
     const { skip, take } = skipTake(query);
     const where: Prisma.InvoiceWhereInput = {
       ...notDeleted,
       ...(query.bookingId ? { bookingId: query.bookingId } : {}),
       ...(query.status ? { status: query.status } : {}),
       ...(query.q ? { invoiceNumber: { contains: query.q, mode: 'insensitive' } } : {}),
-      ...(role === Role.ADMIN ? {} : { userId }),
+      ...(role === Role.ADMIN ? viaBookingVendorCountry(adminScope(actor)) : { userId }),
     };
     const [items, total] = await prisma.$transaction([
       prisma.invoice.findMany({
@@ -79,7 +81,7 @@ export const financeService = {
     return paginated(items, total, query);
   },
 
-  async get(userId: string, role: Role, id: string) {
+  async get(userId: string, role: Role, id: string, actor?: AuthUser) {
     const row = await prisma.invoice.findFirst({
       where: { id, ...notDeleted },
       include: {
@@ -94,13 +96,17 @@ export const financeService = {
     if (role !== Role.ADMIN && row.userId !== userId) {
       throw new ForbiddenError();
     }
+    if (role === Role.ADMIN) {
+      assertCountryAllowed(adminScope(actor), row.booking.vendor?.country ?? null);
+    }
     return row;
   },
 
-  async erpExport(query: z.infer<typeof erpExportQuery>) {
+  async erpExport(query: z.infer<typeof erpExportQuery>, actor?: AuthUser) {
     const rows = await prisma.invoice.findMany({
       where: {
         ...notDeleted,
+        ...viaBookingVendorCountry(adminScope(actor)),
         ...(query.from || query.to
           ? {
               issuedAt: {

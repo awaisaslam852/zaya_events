@@ -80,6 +80,11 @@ enum CommissionStatus {
   VOID
 }
 
+enum ReviewDirection {
+  CUSTOMER_TO_VENDOR
+  VENDOR_TO_CUSTOMER
+}
+
 enum NotificationChannel {
   IN_APP
   PUSH
@@ -105,6 +110,17 @@ enum ConversationType {
   CUSTOMER_VENDOR
   CUSTOMER_ADMIN
   VENDOR_ADMIN
+}
+
+enum VenuePricingModel {
+  HIRE
+  PER_GUEST
+  HYBRID
+}
+
+enum VenuePackageUnit {
+  EVENT
+  GUEST
 }
 
 enum AvailabilityResourceType {
@@ -237,9 +253,13 @@ model User {
   avatarKey        String?
   locale           String     @default("en")
   country          String?
+  isSuperAdmin     Boolean    @default(false)
+  allowedCountries Json       @default("[]")
   emailVerifiedAt  DateTime?
   phoneVerifiedAt  DateTime?
   lastLoginAt      DateTime?
+  ratingAvg        Decimal    @default(0) @db.Decimal(3, 2)
+  ratingCount      Int        @default(0)
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
   deletedAt        DateTime?
@@ -249,6 +269,7 @@ model User {
   bookings            Booking[]
   venueVisits         VenueVisit[]
   favorites           Favorite[]
+  cartItems           CartItem[]
   conversationsAsA    Conversation[]          @relation("ConversationParticipantA")
   conversationsAsB    Conversation[]          @relation("ConversationParticipantB")
   messages            Message[]
@@ -268,9 +289,28 @@ model User {
   callsMade           Call[]                  @relation("CallCaller")
   callsReceived       Call[]                  @relation("CallCallee")
   crmFollowUps        CrmFollowUp[]           @relation("CrmFollowUpOwner")
+  adminAuditLogs      AdminAuditLog[]         @relation("AdminAuditActor")
+  reviewsAuthored     Review[]                @relation("ReviewAuthor")
+  reviewsReceived     Review[]                @relation("ReviewTarget")
 
   @@index([role, status])
   @@index([deletedAt])
+}
+
+model AdminAuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  actorId    String   @db.Uuid
+  action     String
+  entityType String
+  entityId   String?
+  country    String?
+  meta       Json?
+  createdAt  DateTime @default(now())
+
+  actor User @relation("AdminAuditActor", fields: [actorId], references: [id])
+
+  @@index([actorId, createdAt])
+  @@index([entityType, entityId])
 }
 
 model RefreshToken {
@@ -378,6 +418,7 @@ model Vendor {
   payouts             Payout[]
   commissions         Commission[]
   bookings            Booking[]
+  reviews             Review[]
 
   @@index([status])
   @@index([deletedAt])
@@ -459,6 +500,9 @@ model Venue {
   longitude     Decimal   @db.Decimal(10, 7)
   capacityMin   Int
   capacityMax   Int
+  startingPrice Decimal           @default(0) @db.Decimal(12, 2)
+  currency      String            @default("AED")
+  pricingModel  VenuePricingModel @default(HYBRID)
   amenities     Json
   coverKey      String?
   galleryKeys   Json
@@ -474,6 +518,7 @@ model Venue {
   availability   VenueAvailability[]
   bookings       Booking[]
   visits         VenueVisit[]
+  reviews        Review[]
 
   @@index([vendorId])
   @@index([city])
@@ -490,7 +535,8 @@ model VenuePackage {
   guestCountMin Int
   guestCountMax Int
   durationHours Int
-  isActive      Boolean   @default(true)
+  pricingUnit   VenuePackageUnit @default(EVENT)
+  isActive      Boolean          @default(true)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   deletedAt     DateTime?
@@ -544,6 +590,7 @@ model Listing {
   category   ServiceCategory @relation(fields: [categoryId], references: [id])
   packages   ListingPackage[]
   bookings   Booking[]
+  reviews    Review[]
 
   @@index([vendorId])
   @@index([categoryId])
@@ -863,6 +910,7 @@ model Booking {
   flightBooking    FlightBooking?
   hotelBooking     HotelBooking?
   calls            Call[]
+  reviews          Review[]
 
   @@index([customerId, status])
   @@index([vendorId, status])
@@ -884,6 +932,36 @@ model BookingStatusHistory {
   actor   User?   @relation(fields: [actorId], references: [id])
 
   @@index([bookingId])
+}
+
+model Review {
+  id           String          @id @default(uuid()) @db.Uuid
+  bookingId    String          @db.Uuid
+  authorId     String          @db.Uuid
+  targetUserId String          @db.Uuid
+  vendorId     String?         @db.Uuid
+  venueId      String?         @db.Uuid
+  listingId    String?         @db.Uuid
+  direction    ReviewDirection
+  rating       Int
+  body         Json?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  deletedAt    DateTime?
+
+  booking Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  author  User     @relation("ReviewAuthor", fields: [authorId], references: [id])
+  target  User     @relation("ReviewTarget", fields: [targetUserId], references: [id])
+  vendor  Vendor?  @relation(fields: [vendorId], references: [id])
+  venue   Venue?   @relation(fields: [venueId], references: [id])
+  listing Listing? @relation(fields: [listingId], references: [id])
+
+  @@unique([bookingId, direction])
+  @@index([vendorId, direction, createdAt])
+  @@index([venueId, direction])
+  @@index([listingId, direction])
+  @@index([targetUserId])
+  @@index([deletedAt])
 }
 
 model VenueVisit {
@@ -923,6 +1001,25 @@ model Favorite {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, resourceType, resourceId])
+}
+
+model CartItem {
+  id         String      @id @default(uuid()) @db.Uuid
+  userId     String      @db.Uuid
+  type       BookingType
+  resourceId String
+  startAt    DateTime
+  endAt      DateTime?
+  guestCount Int?
+  notes      Json?
+  snapshot   Json
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  deletedAt  DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, deletedAt])
 }
 
 model Conversation {
@@ -1056,8 +1153,12 @@ model Commission {
   id         String           @id @default(uuid()) @db.Uuid
   bookingId  String           @db.Uuid
   vendorId   String           @db.Uuid
+  country    String?
   rate       Decimal          @db.Decimal(5, 2)
   amount     Decimal          @db.Decimal(12, 2)
+  hqRate     Decimal          @default(0) @db.Decimal(5, 2)
+  hqAmount   Decimal          @default(0) @db.Decimal(12, 2)
+  deskAmount Decimal          @default(0) @db.Decimal(12, 2)
   currency   String           @default("AED")
   status     CommissionStatus @default(ACCRUED)
   createdAt  DateTime         @default(now())
@@ -1069,6 +1170,16 @@ model Commission {
 
   @@index([vendorId])
   @@index([bookingId])
+  @@index([country])
+}
+
+model CountryCommissionPolicy {
+  id                String   @id @default(uuid()) @db.Uuid
+  country           String   @unique
+  hqShareRate       Decimal  @default(30.00) @db.Decimal(5, 2)
+  defaultVendorRate Decimal  @default(12.00) @db.Decimal(5, 2)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 }
 
 model CrmNote {

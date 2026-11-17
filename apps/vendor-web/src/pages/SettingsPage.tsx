@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { api, unwrap } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { LanguageSwitch } from '@/components/LanguageSwitch';
 import { toast } from 'sonner';
 import { useEffect } from 'react';
 
@@ -19,7 +20,7 @@ type Form = z.infer<typeof schema>;
 type Profile = { notificationPrefs?: Form };
 
 export function SettingsPage() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const form = useForm<Form>({ resolver: zodResolver(schema), defaultValues: { email: true, push: true, whatsapp: false } });
   const me = useQuery({ queryKey: ['vendor-me'], queryFn: () => unwrap<Profile>(api.get('/api/v1/vendors/me')) });
@@ -62,9 +63,7 @@ export function SettingsPage() {
           <CardTitle>{t('settings.language')}</CardTitle>
         </CardHeader>
         <CardContent>
-          <Button variant="outline" onClick={() => void i18n.changeLanguage(i18n.language.startsWith('ar') ? 'en' : 'ar')}>
-            {i18n.language.startsWith('ar') ? 'English' : 'العربية'}
-          </Button>
+          <LanguageSwitch />
         </CardContent>
       </Card>
     </div>

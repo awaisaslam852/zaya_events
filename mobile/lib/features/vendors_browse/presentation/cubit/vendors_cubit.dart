@@ -1,8 +1,8 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:zaya_events/core/bloc/safe_cubit.dart';
 import '../../domain/usecases/vendors_usecases.dart';
 import 'vendors_state.dart';
 
-class VendorsCubit extends Cubit<VendorsState> {
+class VendorsCubit extends SafeCubit<VendorsState> {
   VendorsCubit(this._list, this._get) : super(const VendorsState());
 
   final ListVendors _list;

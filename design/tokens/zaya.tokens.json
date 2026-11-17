@@ -1,0 +1,25 @@
+{
+  "zaya": {
+    "color": {
+      "ivory": { "value": "#F6F1E8", "type": "color" },
+      "ivoryDeep": { "value": "#EFE6D8", "type": "color" },
+      "cream": { "value": "#FFFCFA", "type": "color" },
+      "ink": { "value": "#1C1410", "type": "color" },
+      "muted": { "value": "#7A6A5C", "type": "color" },
+      "gold": { "value": "#C4A574", "type": "color" },
+      "goldSoft": { "value": "#E8D9BE", "type": "color" },
+      "merlot": { "value": "#3B2A24", "type": "color" },
+      "line": { "value": "#E6D9C8", "type": "color" },
+      "success": { "value": "#3D6B4F", "type": "color" },
+      "danger": { "value": "#9B3D3D", "type": "color" }
+    },
+    "font": {
+      "display": { "value": "Playfair Display", "type": "fontFamilies" },
+      "ui": { "value": "Inter", "type": "fontFamilies" }
+    },
+    "radius": {
+      "card": { "value": "16px", "type": "borderRadius" },
+      "button": { "value": "14px", "type": "borderRadius" }
+    }
+  }
+}

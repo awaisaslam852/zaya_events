@@ -12,7 +12,7 @@ import { LocalizedFields } from '@/components/LocalizedFields';
 import { FileUpload, GalleryUpload } from '@/components/FileUpload';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 
 const locSchema = z.object({ en: z.string().min(1), ar: z.string().min(1) });
@@ -59,25 +59,28 @@ export function CarsPage() {
 
   return (
     <div>
-      <ListToolbar title={t('nav.cars')} subtitle="Fleet photos, daily rates, and booking-ready specs." search={q} onSearch={setQ} page={page} pageCount={list.data?.pageCount ?? 1} onPage={setPage} extra={
+      <ListToolbar title={t('nav.cars')} subtitle={t('pages.cars')} search={q} onSearch={setQ} page={page} pageCount={list.data?.pageCount ?? 1} onPage={setPage} extra={
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild><Button>{t('common.create')}</Button></DialogTrigger>
           <DialogContent className="max-h-[90vh] overflow-y-auto">
-            <DialogHeader><DialogTitle>{t('common.create')}</DialogTitle></DialogHeader>
+            <DialogHeader>
+              <DialogTitle>{t('common.create')}</DialogTitle>
+              <DialogDescription>{t('pages.cars')}</DialogDescription>
+            </DialogHeader>
             <FormProvider {...form}>
               <form className="space-y-3" onSubmit={form.handleSubmit((v) => create.mutate(v))}>
                 <LocalizedFields name="name" />
                 <LocalizedFields name="description" textarea />
-                <Input placeholder="Make" {...form.register('make')} />
-                <Input placeholder="Model" {...form.register('model')} />
-                <Input type="number" placeholder="Year" {...form.register('year')} />
-                <Input type="number" placeholder="Seats" {...form.register('seats')} />
+                <Input placeholder={t('common.make')} {...form.register('make')} />
+                <Input placeholder={t('common.model')} {...form.register('model')} />
+                <Input type="number" placeholder={t('common.year')} {...form.register('year')} />
+                <Input type="number" placeholder={t('common.seats')} {...form.register('seats')} />
                 <select className="h-10 w-full rounded-md border px-2" {...form.register('transmission')}>
                   <option value="AUTOMATIC">AUTOMATIC</option>
                   <option value="MANUAL">MANUAL</option>
                 </select>
-                <Input type="number" placeholder="Daily rate" {...form.register('dailyRate')} />
-                <FileUpload label="Cover" folder="cars" onUploaded={(f) => form.setValue('coverKey', f.url || f.key)} />
+                <Input type="number" placeholder={t('common.dailyRate')} {...form.register('dailyRate')} />
+                <FileUpload label={t('common.cover')} folder="cars" onUploaded={(f) => form.setValue('coverKey', f.url || f.key)} />
                 <GalleryUpload
                   label={t('common.photos')}
                   folder="cars"
@@ -89,7 +92,10 @@ export function CarsPage() {
                     }
                   }}
                 />
-                <Button type="submit">{t('common.save')}</Button>
+                <DialogFooter>
+                  <Button type="button" variant="outline" onClick={() => setOpen(false)}>{t('common.cancel')}</Button>
+                  <Button type="submit">{t('common.save')}</Button>
+                </DialogFooter>
               </form>
             </FormProvider>
           </DialogContent>

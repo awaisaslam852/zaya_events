@@ -7,7 +7,7 @@ export const venueVisitRepository = {
     return prisma.$transaction([
       prisma.venueVisit.findMany({
         where,
-        include: { venue: true, representative: true, customer: true },
+        include: { venue: { include: { vendor: true } }, representative: true, customer: true },
         orderBy: { scheduledAt: 'asc' },
         skip,
         take,
@@ -18,7 +18,7 @@ export const venueVisitRepository = {
   findById(id: string) {
     return prisma.venueVisit.findFirst({
       where: { id, ...notDeleted },
-      include: { venue: true, representative: true, customer: true },
+      include: { venue: { include: { vendor: true } }, representative: true, customer: true },
     });
   },
   create(data: Prisma.VenueVisitCreateInput) {
@@ -28,7 +28,7 @@ export const venueVisitRepository = {
     return prisma.venueVisit.update({
       where: { id },
       data,
-      include: { venue: true, representative: true },
+      include: { venue: { include: { vendor: true } }, representative: true },
     });
   },
 };

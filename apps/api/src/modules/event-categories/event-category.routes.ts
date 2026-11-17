@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { requireAuth } from '../../middleware/auth.js';
-import { requireRole } from '../../middleware/rbac.js';
+import { requireRole, requireSuperAdmin } from '../../middleware/rbac.js';
 import { validate } from '../../middleware/validate.js';
 import { idParamSchema } from '../../lib/common.js';
 import { eventCategoryController } from './event-category.controller.js';
@@ -20,6 +20,7 @@ eventCategoriesRouter.post(
   '/',
   requireAuth,
   requireRole('admin'),
+  requireSuperAdmin,
   validate({ body: eventCategoryBody }),
   eventCategoryController.create,
 );
@@ -27,6 +28,7 @@ eventCategoriesRouter.patch(
   '/:id',
   requireAuth,
   requireRole('admin'),
+  requireSuperAdmin,
   validate({ params: idParamSchema, body: eventCategoryPatch }),
   eventCategoryController.update,
 );
@@ -34,6 +36,7 @@ eventCategoriesRouter.post(
   '/:id/enable',
   requireAuth,
   requireRole('admin'),
+  requireSuperAdmin,
   validate({ params: idParamSchema }),
   eventCategoryController.enable,
 );
@@ -41,6 +44,7 @@ eventCategoriesRouter.post(
   '/:id/disable',
   requireAuth,
   requireRole('admin'),
+  requireSuperAdmin,
   validate({ params: idParamSchema }),
   eventCategoryController.disable,
 );
@@ -48,6 +52,7 @@ eventCategoriesRouter.delete(
   '/:id',
   requireAuth,
   requireRole('admin'),
+  requireSuperAdmin,
   validate({ params: idParamSchema }),
   eventCategoryController.remove,
 );

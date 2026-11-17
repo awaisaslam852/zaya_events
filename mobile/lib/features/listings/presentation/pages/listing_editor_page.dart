@@ -108,12 +108,9 @@ class _ListingEditorPageState extends State<ListingEditorPage> {
         'title': catalogText(title),
         'description': catalogText(description),
         'city': _city.text.trim().isEmpty ? 'Dubai' : _city.text.trim(),
-        'country': 'AE',
         'startingPrice': num.tryParse(_price.text.trim()) ?? 0,
-        'currency': 'AED',
         'isPublished': true,
-        if (_gallery.isNotEmpty) 'coverKey': _gallery.first,
-        'galleryKeys': _gallery,
+        ...catalogGalleryPayload(_gallery),
         'packages': <Map<String, dynamic>>[],
         'customFieldValues': <String, dynamic>{},
       },
@@ -190,7 +187,7 @@ class _ListingEditorPageState extends State<ListingEditorPage> {
                   children: [
                     Text(l10n.createListing, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
                     const SizedBox(height: 6),
-                    Text(l10n.languageHint, style: TextStyle(color: Colors.grey.shade700, fontSize: 13)),
+                    Text(l10n.eventLanguageHint, style: TextStyle(color: Colors.grey.shade700, fontSize: 13)),
                     const SizedBox(height: 16),
                     if (_loadingCats)
                       const Padding(
@@ -249,7 +246,14 @@ class _ListingEditorPageState extends State<ListingEditorPage> {
                     ),
                     if (_gallery.isNotEmpty) ...[
                       const SizedBox(height: 12),
-                      CatalogGallery(urls: List<String>.from(_gallery)),
+                      CatalogGalleryEditor(
+                        urls: List<String>.from(_gallery),
+                        onChanged: (next) => setState(() {
+                          _gallery
+                            ..clear()
+                            ..addAll(next);
+                        }),
+                      ),
                     ],
                     const SizedBox(height: 20),
                     Builder(

@@ -41,3 +41,10 @@ class ConfirmBookingPayment {
   final BookingsRepository _repository;
   Future<Either<Failure, Map<String, dynamic>>> call(String paymentId) => _repository.confirmPayment(paymentId);
 }
+
+class CreateBookingReview {
+  CreateBookingReview(this._repository);
+  final BookingsRepository _repository;
+  Future<Either<Failure, Map<String, dynamic>>> call(String bookingId, Map<String, dynamic> body) =>
+      _repository.createReview(bookingId, body);
+}

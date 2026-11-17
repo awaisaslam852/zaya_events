@@ -3,11 +3,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/property_card.dart';
+import '../../../../core/widgets/zaya_avatar.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
 import '../../../calls/presentation/bloc/call_bloc.dart';
 import '../../../calls/presentation/bloc/call_event.dart';
+import '../../conversation_inbox.dart';
 import '../cubit/chat_cubit.dart';
 
 class ChatThreadPage extends StatefulWidget {
@@ -34,7 +37,9 @@ class _ChatThreadPageState extends State<ChatThreadPage> {
     final myId = context.read<AuthBloc>().state.maybeWhen(authenticated: (user) => user.id, orElse: () => '');
     return BlocProvider(
       create: (_) => sl<ChatCubit>()..openThread(widget.id),
-      child: BlocListener<ChatCubit, ChatState>(
+      child: Builder(
+        builder: (context) {
+          return BlocListener<ChatCubit, ChatState>(
         listenWhen: (prev, next) => next.error != null && next.error != prev.error,
         listener: (context, state) {
           final error = state.error;
@@ -45,7 +50,30 @@ class _ChatThreadPageState extends State<ChatThreadPage> {
         child: Scaffold(
           backgroundColor: AppTheme.canvas,
           appBar: AppBar(
-            title: Text(l10n.chat),
+            title: BlocBuilder<ChatCubit, ChatState>(
+              builder: (context, _) {
+                final chat = context.read<ChatCubit>();
+                final convo = chat.conversation;
+                final name = convo == null ? l10n.chat : conversationPeerName(convo, myId);
+                final imageKey = convo == null ? null : conversationPeerImageKey(convo, myId);
+                return Row(
+                  children: [
+                    ZayaAvatar(
+                      url: imageKey == null ? null : resolveMediaUrl(imageKey),
+                      initials: convo == null ? '?' : conversationPeerInitials(convo, myId),
+                      radius: 16,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        name.isEmpty ? l10n.chat : name,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
             actions: [
               Builder(
                 builder: (context) {
@@ -53,13 +81,14 @@ class _ChatThreadPageState extends State<ChatThreadPage> {
                     tooltip: l10n.voiceCall,
                     icon: const Icon(Icons.call_outlined),
                     onPressed: () {
-                      final peer = context.read<ChatCubit>().peerOf(myId);
+                      final chat = context.read<ChatCubit>();
+                      final peer = chat.peerOf(myId);
                       if (peer == null || peer.isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.errorGeneric)));
                         return;
                       }
                       context.read<CallBloc>().add(CallEvent.outgoing(calleeId: peer));
-                      context.push('/calls/outgoing');
+                      context.push('/calls/outgoing', extra: chat.peerLabel(myId));
                     },
                   );
                 },
@@ -135,15 +164,20 @@ class _ChatThreadPageState extends State<ChatThreadPage> {
                                     return;
                                   }
                                   setState(() => _sending = true);
-                                  final error = await context.read<ChatCubit>().send(widget.id, text);
-                                  if (!context.mounted) {
-                                    return;
-                                  }
-                                  setState(() => _sending = false);
-                                  if (error == null) {
-                                    _controller.clear();
-                                  } else {
-                                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
+                                  try {
+                                    final error = await context.read<ChatCubit>().send(widget.id, text);
+                                    if (!context.mounted) {
+                                      return;
+                                    }
+                                    if (error == null) {
+                                      _controller.clear();
+                                    } else {
+                                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
+                                    }
+                                  } finally {
+                                    if (mounted) {
+                                      setState(() => _sending = false);
+                                    }
                                   }
                                 },
                         ),
@@ -155,6 +189,8 @@ class _ChatThreadPageState extends State<ChatThreadPage> {
             ],
           ),
         ),
+          );
+        },
       ),
     );
   }

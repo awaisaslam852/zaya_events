@@ -32,4 +32,12 @@ class FavoritesRepositoryImpl implements FavoritesRepository {
     return _client.get('/favorites/$id', parse: (data) => FavoritesItem(Map<String, dynamic>.from(data as Map)));
   }
 
+  @override
+  Future<Either<Failure, bool>> remove({required String resourceType, required String resourceId}) {
+    return _client.delete(
+      '/favorites',
+      data: {'resourceType': resourceType, 'resourceId': resourceId},
+      parse: (_) => true,
+    );
+  }
 }

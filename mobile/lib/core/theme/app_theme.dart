@@ -70,6 +70,15 @@ class AppTheme {
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: blue, width: 2),
         ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFB42318)),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFB42318), width: 2),
+        ),
+        errorStyle: const TextStyle(color: Color(0xFFB42318), fontWeight: FontWeight.w700, fontSize: 12, height: 1.3),
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: Colors.white,
@@ -89,6 +98,54 @@ class AppTheme {
           borderRadius: BorderRadius.circular(radius),
           side: const BorderSide(color: line),
         ),
+      ),
+      popupMenuTheme: PopupMenuThemeData(
+        color: Colors.white,
+        elevation: 10,
+        shadowColor: navy.withValues(alpha: 0.16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        textStyle: const TextStyle(color: ink, fontWeight: FontWeight.w600),
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: Colors.white,
+        barrierColor: const Color(0xCC00183D),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+        titleTextStyle: const TextStyle(color: ink, fontWeight: FontWeight.w800, fontSize: 20),
+        contentTextStyle: const TextStyle(color: muted, fontSize: 15, height: 1.4),
+      ),
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: Colors.white,
+        modalBarrierColor: Color(0x9900183D),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        showDragHandle: false,
+      ),
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: navy,
+        contentTextStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        insetPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      ),
+      datePickerTheme: DatePickerThemeData(
+        backgroundColor: Colors.white,
+        headerBackgroundColor: navy,
+        headerForegroundColor: Colors.white,
+        dayForegroundColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return const Color(0xFF1A1A1A);
+          }
+          return ink;
+        }),
+        dayBackgroundColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return yellow;
+          }
+          return null;
+        }),
+        todayForegroundColor: const WidgetStatePropertyAll(navy),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       ),
       textTheme: const TextTheme(
         displaySmall: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: ink, height: 1.15),

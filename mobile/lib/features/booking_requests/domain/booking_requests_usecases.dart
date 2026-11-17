@@ -8,7 +8,7 @@ class BookingRequestsRepository {
   final ApiClient _client;
 
   Future<Either<Failure, Paginated<Map<String, dynamic>>>> list() {
-    return _client.get('/bookings', parse: (data) {
+    return _client.get('/bookings', query: const {'pageSize': 50}, parse: (data) {
       final map = Map<String, dynamic>.from(data as Map);
       final items = (map['items'] as List? ?? []).map((e) => Map<String, dynamic>.from(e as Map)).toList();
       return Paginated(

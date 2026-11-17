@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:table_calendar/table_calendar.dart';
+import '../../../../core/bloc/safe_cubit.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/screen_header.dart';
@@ -8,7 +9,7 @@ import '../../../../core/widgets/zaya_fields.dart';
 import '../../domain/availability_usecases.dart';
 import '../../../../l10n/app_localizations.dart';
 
-class AvailabilityCubit extends Cubit<List<DateTime>> {
+class AvailabilityCubit extends SafeCubit<List<DateTime>> {
   AvailabilityCubit(this._list) : super(const []);
   final ListAvailability _list;
 

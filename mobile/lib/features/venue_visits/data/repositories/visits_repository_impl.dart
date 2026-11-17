@@ -40,8 +40,26 @@ class VisitsRepositoryImpl implements VisitsRepository {
   @override
   Future<Either<Failure, VisitsItem>> decide(String id, {required bool accepted}) {
     return _client.post(
-      '/venue-visits/$id/decide',
+      '/venue-visits/$id/decision',
       data: {'accepted': accepted},
+      parse: (data) => VisitsItem(Map<String, dynamic>.from(data as Map)),
+    );
+  }
+
+  @override
+  Future<Either<Failure, VisitsItem>> approve(String id) {
+    return _client.post(
+      '/venue-visits/$id/approve',
+      data: {},
+      parse: (data) => VisitsItem(Map<String, dynamic>.from(data as Map)),
+    );
+  }
+
+  @override
+  Future<Either<Failure, VisitsItem>> complete(String id) {
+    return _client.post(
+      '/venue-visits/$id/complete',
+      data: {},
       parse: (data) => VisitsItem(Map<String, dynamic>.from(data as Map)),
     );
   }

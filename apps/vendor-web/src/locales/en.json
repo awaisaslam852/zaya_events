@@ -41,7 +41,9 @@
     "city": "City",
     "price": "Price",
     "notes": "Notes",
-    "languageHint": "Switch the app language in the header. You enter each field once — not separately in English and Arabic."
+    "languageHint": "Switch the app language in the header. You enter each field once — not separately in English and Arabic.",
+    "back": "Back",
+    "locale": "Language"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -90,5 +92,11 @@
     "profile": "Profile",
     "notifications": "Notification preferences",
     "language": "Language"
+  },
+  "layout": {
+    "console": "Partner console",
+    "partner": "Vendor partner",
+    "menu": "Menu",
+    "closeMenu": "Close menu"
   }
 }

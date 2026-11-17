@@ -13,7 +13,7 @@ import { FileUpload, GalleryUpload } from '@/components/FileUpload';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 
 const locSchema = z.object({ en: z.string().min(1), ar: z.string().min(1) });
@@ -23,7 +23,6 @@ const schema = z.object({
   address: locSchema,
   type: z.enum(['HOTEL_ROOM', 'VILLA', 'APARTMENT', 'RESORT', 'CHALET', 'BUNGALOW']),
   city: z.string().min(1),
-  country: z.string().min(1),
   maxGuests: z.coerce.number(),
   bedrooms: z.coerce.number(),
   bathrooms: z.coerce.number(),
@@ -47,7 +46,6 @@ export function AccommodationsPage() {
       address: { en: '', ar: '' },
       type: 'VILLA',
       city: '',
-      country: 'AE',
       maxGuests: 6,
       bedrooms: 3,
       bathrooms: 2,
@@ -70,11 +68,14 @@ export function AccommodationsPage() {
 
   return (
     <div>
-      <ListToolbar title={t('nav.accommodations')} subtitle="Villas, hotels, and apartments with nightly rates and galleries." search={q} onSearch={(v) => { setQ(v); setPage(1); }} page={page} pageCount={list.data?.pageCount ?? 1} onPage={setPage} extra={
+      <ListToolbar title={t('nav.accommodations')} subtitle={t('pages.accommodations')} search={q} onSearch={(v) => { setQ(v); setPage(1); }} page={page} pageCount={list.data?.pageCount ?? 1} onPage={setPage} extra={
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild><Button>{t('common.create')}</Button></DialogTrigger>
           <DialogContent className="max-h-[90vh] overflow-y-auto max-w-2xl">
-            <DialogHeader><DialogTitle>{t('common.create')}</DialogTitle></DialogHeader>
+            <DialogHeader>
+              <DialogTitle>{t('common.create')}</DialogTitle>
+              <DialogDescription>{t('pages.accommodations')}</DialogDescription>
+            </DialogHeader>
             <FormProvider {...form}>
               <form className="space-y-3" onSubmit={form.handleSubmit((v) => create.mutate(v))}>
                 <LocalizedFields name="name" />
@@ -86,13 +87,12 @@ export function AccommodationsPage() {
                 </select>
                 <div className="grid grid-cols-2 gap-2">
                   <Input placeholder={t('common.city')} {...form.register('city')} />
-                  <Input placeholder="Country" {...form.register('country')} />
-                  <Input type="number" placeholder="Guests" {...form.register('maxGuests')} />
-                  <Input type="number" placeholder="Rate" {...form.register('nightlyRate')} />
-                  <Input type="number" placeholder="Bedrooms" {...form.register('bedrooms')} />
-                  <Input type="number" placeholder="Bathrooms" {...form.register('bathrooms')} />
+                  <Input type="number" placeholder={t('common.guests')} {...form.register('maxGuests')} />
+                  <Input type="number" placeholder={t('common.rate')} {...form.register('nightlyRate')} />
+                  <Input type="number" placeholder={t('common.bedrooms')} {...form.register('bedrooms')} />
+                  <Input type="number" placeholder={t('common.bathrooms')} {...form.register('bathrooms')} />
                 </div>
-                <FileUpload label="Cover" folder="stays" onUploaded={(f) => form.setValue('coverKey', f.url || f.key)} />
+                <FileUpload label={t('common.cover')} folder="stays" onUploaded={(f) => form.setValue('coverKey', f.url || f.key)} />
                 <GalleryUpload
                   label={t('common.photos')}
                   folder="stays"
@@ -104,7 +104,10 @@ export function AccommodationsPage() {
                     }
                   }}
                 />
-                <Button type="submit">{t('common.save')}</Button>
+                <DialogFooter>
+                  <Button type="button" variant="outline" onClick={() => setOpen(false)}>{t('common.cancel')}</Button>
+                  <Button type="submit">{t('common.save')}</Button>
+                </DialogFooter>
               </form>
             </FormProvider>
           </DialogContent>

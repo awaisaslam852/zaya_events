@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import '../../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import 'property_card.dart';
 
@@ -120,25 +121,39 @@ class StickyCtaBar extends StatelessWidget {
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
-          child: Row(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              if (price != null)
-                Expanded(
-                  child: Text(
-                    price!,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: AppTheme.navy),
-                  ),
-                )
-              else
-                const Spacer(),
-              if (secondaryLabel != null && onSecondary != null) ...[
-                OutlinedButton(onPressed: onSecondary, child: Text(secondaryLabel!)),
-                const SizedBox(width: 8),
+              if (price != null) ...[
+                Text(
+                  AppLocalizations.of(context).fromPrice(price!),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: AppTheme.navy),
+                ),
+                const SizedBox(height: 10),
               ],
-              FilledButton(onPressed: onPrimary, child: Text(primaryLabel)),
+              Row(
+                children: [
+                  if (secondaryLabel != null && onSecondary != null) ...[
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: onSecondary,
+                        child: Text(secondaryLabel!, overflow: TextOverflow.ellipsis),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: onPrimary,
+                      child: Text(primaryLabel, overflow: TextOverflow.ellipsis),
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
         ),
@@ -166,7 +181,7 @@ class CatalogRail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (loading) {
-      return const SizedBox(height: 280, child: Center(child: CircularProgressIndicator()));
+      return const SizedBox(height: 276, child: Center(child: CircularProgressIndicator()));
     }
     if (itemCount == 0) {
       return Padding(
@@ -175,16 +190,19 @@ class CatalogRail extends StatelessWidget {
       );
     }
     return SizedBox(
-      height: 292,
+      height: 276,
       child: ListView.separated(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.fromLTRB(16, 2, 16, 8),
         scrollDirection: Axis.horizontal,
         itemCount: itemCount,
         separatorBuilder: (_, _) => const SizedBox(width: 12),
         itemBuilder: (context, index) {
-          return SizedBox(
-            width: 236,
-            child: PropertyCard(raw: rawAt(index), horizontal: true, onTap: () => onTap(index)),
+          return Align(
+            alignment: Alignment.topCenter,
+            child: SizedBox(
+              width: 220,
+              child: PropertyCard(raw: rawAt(index), horizontal: true, onTap: () => onTap(index)),
+            ),
           );
         },
       ),
@@ -208,44 +226,88 @@ class _HeroGalleryState extends State<HeroGallery> {
   @override
   Widget build(BuildContext context) {
     if (widget.urls.isEmpty) {
-      return Container(height: widget.height, color: AppTheme.navy, child: const Icon(Icons.photo, color: Colors.white54, size: 48));
+      return Container(
+        height: widget.height,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF00183D), Color(0xFF003580), Color(0xFF0B5BB5)],
+          ),
+        ),
+        child: const Icon(Icons.apartment_outlined, color: Colors.white54, size: 56),
+      );
     }
-    return Stack(
-      alignment: Alignment.bottomCenter,
-      children: [
-        SizedBox(
-          height: widget.height,
-          child: PageView.builder(
+    final l10n = AppLocalizations.of(context);
+    return SizedBox(
+      height: widget.height,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          PageView.builder(
             onPageChanged: (value) => setState(() => _index = value),
             itemCount: widget.urls.length,
             itemBuilder: (context, index) {
               return GestureDetector(
                 onTap: () => showCatalogLightbox(context, widget.urls, index),
-                child: CachedNetworkImage(imageUrl: widget.urls[index], fit: BoxFit.cover, width: double.infinity),
+                child: CachedNetworkImage(
+                  imageUrl: widget.urls[index],
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  placeholder: (_, _) => const ColoredBox(color: Color(0xFF00183D)),
+                  errorWidget: (_, _, _) => const ColoredBox(
+                    color: Color(0xFF003580),
+                    child: Icon(Icons.broken_image_outlined, color: Colors.white54, size: 48),
+                  ),
+                ),
               );
             },
           ),
-        ),
-        if (widget.urls.length > 1)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                for (var i = 0; i < widget.urls.length; i++)
-                  Container(
-                    width: i == _index ? 16 : 6,
-                    height: 6,
-                    margin: const EdgeInsets.symmetric(horizontal: 3),
-                    decoration: BoxDecoration(
-                      color: i == _index ? Colors.white : Colors.white54,
-                      borderRadius: BorderRadius.circular(99),
-                    ),
-                  ),
-              ],
+          const IgnorePointer(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0x6600183D), Colors.transparent, Color(0x9900183D)],
+                  stops: [0, 0.45, 1],
+                ),
+              ),
             ),
           ),
-      ],
+          Positioned(
+            left: 16,
+            bottom: 16,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.45), borderRadius: BorderRadius.circular(999)),
+              child: Text(
+                l10n.photoCounter('${_index + 1}', '${widget.urls.length}'),
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 12),
+              ),
+            ),
+          ),
+          if (widget.urls.length > 1)
+            Positioned(
+              right: 16,
+              bottom: 18,
+              child: Row(
+                children: [
+                  for (var i = 0; i < widget.urls.length; i++)
+                    Container(
+                      width: i == _index ? 16 : 6,
+                      height: 6,
+                      margin: const EdgeInsets.symmetric(horizontal: 3),
+                      decoration: BoxDecoration(
+                        color: i == _index ? AppTheme.yellow : Colors.white70,
+                        borderRadius: BorderRadius.circular(99),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

@@ -14,7 +14,7 @@ class AuthRepositoryImpl implements AuthRepository {
   final ApiClient _client;
   final TokenStorage _storage;
 
-  UserEntity _toEntity(UserModel model) {
+  UserEntity _toEntity(UserModel model, {String? country}) {
     return UserEntity(
       id: model.id,
       email: model.email,
@@ -25,6 +25,7 @@ class AuthRepositoryImpl implements AuthRepository {
       displayName: model.displayName,
       avatarKey: model.avatarKey,
       locale: model.locale,
+      country: country,
       status: model.status,
       vendor: model.vendor,
     );
@@ -33,7 +34,13 @@ class AuthRepositoryImpl implements AuthRepository {
   UserEntity _userFrom(dynamic data) {
     final map = Map<String, dynamic>.from(data as Map);
     final user = Map<String, dynamic>.from(map['user'] as Map? ?? map);
-    return _toEntity(UserModel.fromJson(user));
+    final vendor = user['vendor'] is Map ? Map<String, dynamic>.from(user['vendor'] as Map) : null;
+    final model = UserModel.fromJson({
+      ...user,
+      'vendor': vendor,
+      'avatarKey': user['avatarKey'] ?? user['avatarUrl'],
+    });
+    return _toEntity(model, country: user['country'] as String?);
   }
 
   AuthSession _sessionFrom(dynamic data) {

@@ -4,50 +4,39 @@ import '../../domain/entities/call_entity.dart';
 import '../bloc/call_bloc.dart';
 import '../bloc/call_event.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../widgets/call_stage.dart';
 
 class IncomingCallPage extends StatelessWidget {
-  const IncomingCallPage({super.key, required this.call});
-  final CallEntity call;
+  const IncomingCallPage({super.key, this.call});
+  final CallEntity? call;
 
   @override
   Widget build(BuildContext context) {
+    final incoming = call ?? context.select<CallBloc, CallEntity?>((bloc) => bloc.state.incoming);
+    if (incoming == null) {
+      return const SizedBox.shrink();
+    }
     final l10n = AppLocalizations.of(context);
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: SafeArea(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(l10n.incomingCall, style: const TextStyle(color: Colors.white, fontSize: 24)),
-            const SizedBox(height: 32),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                FilledButton(
-                  style: FilledButton.styleFrom(backgroundColor: Colors.red),
-                  onPressed: () {
-                    context.read<CallBloc>().add(CallEvent.reject(call.id));
-                    if (Navigator.of(context).canPop()) {
-                      Navigator.of(context).pop();
-                    }
-                  },
-                  child: Text(l10n.reject),
-                ),
-                FilledButton(
-                  style: FilledButton.styleFrom(backgroundColor: Colors.green),
-                  onPressed: () {
-                    context.read<CallBloc>().add(CallEvent.accept(call.id));
-                    if (Navigator.of(context).canPop()) {
-                      Navigator.of(context).pop();
-                    }
-                  },
-                  child: Text(l10n.accept),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
+    final name = incoming.peerLabel(incoming: true, fallback: l10n.incomingCall);
+    return CallStage(
+      name: name,
+      initials: incoming.initials(incoming: true),
+      status: l10n.incomingCall,
+      pulsing: true,
+      showAccept: true,
+      showBack: false,
+      onReject: () {
+        context.read<CallBloc>().add(CallEvent.reject(incoming.id));
+        if (Navigator.of(context).canPop()) {
+          Navigator.of(context).pop();
+        }
+      },
+      onAccept: () {
+        context.read<CallBloc>().add(CallEvent.accept(incoming.id));
+        if (Navigator.of(context).canPop()) {
+          Navigator.of(context).pop();
+        }
+      },
     );
   }
 }

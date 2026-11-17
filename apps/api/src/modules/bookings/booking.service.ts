@@ -8,11 +8,19 @@ import {
 } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import { randomInt } from 'node:crypto';
+import { writeAdminAudit } from '../../lib/admin-audit.js';
+import { adminScope, assertCountryAllowed, viaVendorCountry } from '../../lib/admin-scope.js';
+import { splitCommission } from '../../lib/commission-split.js';
+import { currencyForCountry } from '../../lib/countries.js';
+import type { AuthUser } from '../../middleware/auth.js';
 import { AppError, ForbiddenError, NotFoundError } from '../../lib/errors.js';
 import { notDeleted, paginated, skipTake } from '../../lib/common.js';
 import { prisma } from '../../lib/prisma.js';
+import { commissionService } from '../commissions/commission.service.js';
 import { availabilityService } from '../availability/availability.service.js';
 import { notificationService } from '../notifications/notification.service.js';
+import { quoteVenueAmount } from '../../lib/venue-pricing.js';
+import { reviewStateFor } from '../reviews/review.service.js';
 import { bookingRepository } from './booking.repository.js';
 import {
   ALLOWED_TRANSITIONS,
@@ -35,10 +43,14 @@ async function resolveResource(input: z.infer<typeof bookingCreateSchema>) {
     if (!venue) {
       throw new NotFoundError('Venue not found');
     }
-    const pkg = input.venuePackageId
-      ? venue.packages.find((item) => item.id === input.venuePackageId)
-      : venue.packages[0];
-    const amount = Number(pkg?.priceAmount ?? 0);
+    const amount = quoteVenueAmount({
+      startingPrice: venue.startingPrice,
+      pricingModel: venue.pricingModel,
+      capacityMin: venue.capacityMin,
+      packages: venue.packages,
+      packageId: input.venuePackageId,
+      guestCount: input.guestCount,
+    });
     return {
       vendorId: venue.vendorId,
       amount,
@@ -122,9 +134,80 @@ function redactVendorFinance<T extends object>(row: T): T {
   return copy;
 }
 
-function canView(role: Role, userId: string, booking: { customerId: string; vendor: { userId: string } | null }): boolean {
+function bookingStatusCopy(status: BookingStatus, bookingNumber: string) {
+  switch (status) {
+    case BookingStatus.CONFIRMED:
+      return {
+        title: { en: 'Booking accepted', ar: 'تم قبول الحجز' },
+        body: {
+          en: `Booking ${bookingNumber} was accepted.`,
+          ar: `تم قبول الحجز ${bookingNumber}.`,
+        },
+      };
+    case BookingStatus.REJECTED:
+      return {
+        title: { en: 'Booking declined', ar: 'تم رفض الحجز' },
+        body: {
+          en: `Booking ${bookingNumber} was declined.`,
+          ar: `تم رفض الحجز ${bookingNumber}.`,
+        },
+      };
+    case BookingStatus.CANCELLED:
+      return {
+        title: { en: 'Booking cancelled', ar: 'تم إلغاء الحجز' },
+        body: {
+          en: `Booking ${bookingNumber} was cancelled.`,
+          ar: `تم إلغاء الحجز ${bookingNumber}.`,
+        },
+      };
+    case BookingStatus.UNDER_REVIEW:
+      return {
+        title: { en: 'Booking under review', ar: 'الحجز قيد المراجعة' },
+        body: {
+          en: `Booking ${bookingNumber} is being reviewed.`,
+          ar: `الحجز ${bookingNumber} قيد المراجعة.`,
+        },
+      };
+    case BookingStatus.COMPLETED:
+      return {
+        title: { en: 'Booking completed', ar: 'اكتمل الحجز' },
+        body: {
+          en: `Booking ${bookingNumber} is completed.`,
+          ar: `اكتمل الحجز ${bookingNumber}.`,
+        },
+      };
+    case BookingStatus.PAID:
+      return {
+        title: { en: 'Booking paid', ar: 'تم دفع الحجز' },
+        body: {
+          en: `Payment was received for booking ${bookingNumber}.`,
+          ar: `تم استلام الدفع للحجز ${bookingNumber}.`,
+        },
+      };
+    default:
+      return {
+        title: { en: `Booking ${status.toLowerCase()}`, ar: `الحجز ${status}` },
+        body: {
+          en: `Booking ${bookingNumber} is now ${status.toLowerCase()}.`,
+          ar: `أصبح الحجز ${bookingNumber} في حالة ${status}.`,
+        },
+      };
+  }
+}
+
+function canView(
+  role: Role,
+  userId: string,
+  booking: { customerId: string; vendor: { userId: string; country?: string | null } | null },
+  actor?: AuthUser,
+): boolean {
   if (role === Role.ADMIN) {
-    return true;
+    try {
+      assertCountryAllowed(adminScope(actor), booking.vendor?.country ?? null);
+      return true;
+    } catch {
+      return false;
+    }
   }
   if (booking.customerId === userId) {
     return true;
@@ -133,7 +216,7 @@ function canView(role: Role, userId: string, booking: { customerId: string; vend
 }
 
 export const bookingService = {
-  async list(userId: string, role: Role, query: z.infer<typeof bookingListQuery>) {
+  async list(userId: string, role: Role, query: z.infer<typeof bookingListQuery>, actor?: AuthUser) {
     const { skip, take } = skipTake(query);
     const where: Prisma.BookingWhereInput = {
       ...notDeleted,
@@ -142,6 +225,7 @@ export const bookingService = {
       ...(query.eventId ? { eventId: query.eventId } : {}),
       ...(role === Role.ADMIN
         ? {
+            ...viaVendorCountry(adminScope(actor)),
             ...(query.customerId ? { customerId: query.customerId } : {}),
             ...(query.vendorId ? { vendorId: query.vendorId } : {}),
             ...(query.q ? { bookingNumber: { contains: query.q, mode: 'insensitive' as const } } : {}),
@@ -158,15 +242,17 @@ export const bookingService = {
     );
   },
 
-  async get(userId: string, role: Role, id: string) {
+  async get(userId: string, role: Role, id: string, actor?: AuthUser) {
     const booking = await bookingRepository.findById(id);
     if (!booking) {
       throw new NotFoundError('Booking not found');
     }
-    if (!canView(role, userId, booking)) {
+    if (!canView(role, userId, booking, actor)) {
       throw new ForbiddenError();
     }
-    return role === Role.ADMIN ? booking : redactVendorFinance(booking);
+    const reviewState = reviewStateFor(role, userId, booking);
+    const payload = { ...booking, reviewState };
+    return role === Role.ADMIN ? payload : redactVendorFinance(payload);
   },
 
   async create(userId: string, input: z.infer<typeof bookingCreateSchema>, asInquiry = false) {
@@ -181,9 +267,13 @@ export const bookingService = {
     const vendor = resolved.vendorId
       ? await prisma.vendor.findFirst({ where: { id: resolved.vendorId, ...notDeleted } })
       : null;
-    const rate = Number(vendor?.commissionRate ?? 10);
+    const policy = await commissionService.resolvePolicy(vendor?.country);
     const subtotal = resolved.amount;
-    const commission = Math.round(subtotal * rate) / 100;
+    const split = splitCommission({
+      bookingAmount: subtotal,
+      vendorRate: Number(vendor?.commissionRate ?? policy.defaultVendorRate),
+      hqShareRate: policy.hqShareRate,
+    });
     const deposit = Math.round(subtotal * 0.3 * 100) / 100;
     const status = asInquiry ? BookingStatus.INQUIRY : BookingStatus.PENDING;
     const booking = await prisma.$transaction(async (tx) => {
@@ -205,8 +295,9 @@ export const bookingService = {
           startAt: input.startAt,
           endAt,
           guestCount: input.guestCount,
+          currency: currencyForCountry(vendor?.country),
           subtotalAmount: new Decimal(subtotal),
-          commissionAmount: new Decimal(commission),
+          commissionAmount: new Decimal(split.amount),
           depositAmount: new Decimal(deposit),
           balanceAmount: new Decimal(Math.round((subtotal - deposit) * 100) / 100),
           totalAmount: new Decimal(subtotal),
@@ -233,9 +324,18 @@ export const bookingService = {
     if (vendor) {
       await notificationService.notify({
         userId: vendor.userId,
-        title: { en: 'New booking', ar: 'حجز جديد' },
-        body: { en: `Booking ${booking.bookingNumber} is awaiting review.`, ar: `الحجز ${booking.bookingNumber} بانتظار المراجعة.` },
-        data: { type: 'booking_created', bookingId: booking.id },
+        title: asInquiry
+          ? { en: 'New inquiry', ar: 'استفسار جديد' }
+          : { en: 'New booking', ar: 'حجز جديد' },
+        body: {
+          en: asInquiry
+            ? `Inquiry ${booking.bookingNumber} is waiting for your reply.`
+            : `Booking ${booking.bookingNumber} is awaiting review.`,
+          ar: asInquiry
+            ? `الاستفسار ${booking.bookingNumber} بانتظار ردك.`
+            : `الحجز ${booking.bookingNumber} بانتظار المراجعة.`,
+        },
+        data: { type: asInquiry ? 'booking_inquiry' : 'booking_created', bookingId: booking.id },
       });
     }
     return bookingRepository.findById(booking.id);
@@ -247,12 +347,13 @@ export const bookingService = {
     id: string,
     toStatus: BookingStatus,
     reason?: string,
+    actor?: AuthUser,
   ) {
     const booking = await bookingRepository.findById(id);
     if (!booking) {
       throw new NotFoundError('Booking not found');
     }
-    if (!canView(role, userId, booking)) {
+    if (!canView(role, userId, booking, actor)) {
       throw new ForbiddenError();
     }
     const allowed = ALLOWED_TRANSITIONS[booking.status] ?? [];
@@ -262,10 +363,19 @@ export const bookingService = {
     if (role === Role.CUSTOMER && toStatus !== BookingStatus.CANCELLED) {
       throw new ForbiddenError();
     }
+    const policy = await commissionService.resolvePolicy(booking.vendor?.country);
+    const split = splitCommission({
+      bookingAmount: Number(booking.subtotalAmount),
+      vendorRate: Number(booking.vendor?.commissionRate ?? policy.defaultVendorRate),
+      hqShareRate: policy.hqShareRate,
+    });
     const updated = await prisma.$transaction(async (tx) => {
       const row = await tx.booking.update({
         where: { id },
-        data: { status: toStatus },
+        data: {
+          status: toStatus,
+          ...(toStatus === BookingStatus.CONFIRMED ? { commissionAmount: new Decimal(split.amount) } : {}),
+        },
       });
       await tx.bookingStatusHistory.create({
         data: {
@@ -283,8 +393,12 @@ export const bookingService = {
             data: {
               bookingId: id,
               vendorId: booking.vendorId,
-              rate: booking.vendor?.commissionRate ?? 10,
-              amount: booking.commissionAmount,
+              country: booking.vendor?.country ?? policy.country,
+              rate: split.vendorRate,
+              amount: split.amount,
+              hqRate: split.hqShareRate,
+              hqAmount: split.hqAmount,
+              deskAmount: split.deskAmount,
               currency: booking.currency,
               status: CommissionStatus.ACCRUED,
             },
@@ -299,29 +413,39 @@ export const bookingService = {
       }
       return row;
     });
-    const notifyIds = [booking.customerId, booking.vendor?.userId].filter((value): value is string => Boolean(value));
+    const copy = bookingStatusCopy(toStatus, booking.bookingNumber);
+    const notifyIds = [booking.customerId, booking.vendor?.userId].filter(
+      (value): value is string => Boolean(value) && value !== userId,
+    );
     await Promise.all(
       notifyIds.map((target) =>
         notificationService.notify({
           userId: target,
-          title: { en: `Booking ${toStatus.toLowerCase()}`, ar: `الحجز ${toStatus}` },
-          body: {
-            en: `Booking ${booking.bookingNumber} is now ${toStatus.toLowerCase()}.`,
-            ar: `أصبح الحجز ${booking.bookingNumber} في حالة ${toStatus}.`,
-          },
+          title: copy.title,
+          body: copy.body,
           data: { type: 'booking_status', bookingId: id, status: toStatus },
         }),
       ),
     );
+    if (actor?.role === Role.ADMIN) {
+      await writeAdminAudit({
+        actorId: actor.id,
+        action: `booking.${toStatus.toLowerCase()}`,
+        entityType: 'Booking',
+        entityId: id,
+        country: booking.vendor?.country ?? null,
+        meta: { from: booking.status, to: toStatus, bookingNumber: booking.bookingNumber },
+      });
+    }
     return updated;
   },
 
-  async modify(userId: string, role: Role, id: string, input: z.infer<typeof bookingPatchSchema>) {
+  async modify(userId: string, role: Role, id: string, input: z.infer<typeof bookingPatchSchema>, actor?: AuthUser) {
     const booking = await bookingRepository.findById(id);
     if (!booking) {
       throw new NotFoundError('Booking not found');
     }
-    if (!canView(role, userId, booking)) {
+    if (!canView(role, userId, booking, actor)) {
       throw new ForbiddenError();
     }
     const editable: BookingStatus[] = [BookingStatus.INQUIRY, BookingStatus.PENDING, BookingStatus.UNDER_REVIEW];
@@ -381,6 +505,18 @@ export const bookingService = {
         ...(input.eventId === null ? { event: { disconnect: true } } : input.eventId ? { event: { connect: { id: input.eventId } } } : {}),
       },
     });
-    return this.get(userId, role, id);
+    const otherId = userId === booking.customerId ? booking.vendor?.userId : booking.customerId;
+    if (otherId) {
+      await notificationService.notify({
+        userId: otherId,
+        title: { en: 'Booking updated', ar: 'تم تحديث الحجز' },
+        body: {
+          en: `Booking ${booking.bookingNumber} was updated.`,
+          ar: `تم تحديث الحجز ${booking.bookingNumber}.`,
+        },
+        data: { type: 'booking_updated', bookingId: id },
+      });
+    }
+    return this.get(userId, role, id, actor);
   },
 };

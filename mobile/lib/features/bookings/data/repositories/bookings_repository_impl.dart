@@ -59,4 +59,13 @@ class BookingsRepositoryImpl implements BookingsRepository {
       parse: (data) => Map<String, dynamic>.from(data as Map),
     );
   }
+
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> createReview(String bookingId, Map<String, dynamic> body) {
+    return _client.post(
+      '/bookings/$bookingId/reviews',
+      data: body,
+      parse: (data) => Map<String, dynamic>.from(data as Map),
+    );
+  }
 }

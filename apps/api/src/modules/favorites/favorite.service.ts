@@ -101,12 +101,35 @@ async function withTargets<T extends { resourceType: FavoriteResourceType; resou
                 : item.resourceType === FavoriteResourceType.HOTEL
                   ? hotelById[item.resourceId]
                   : honeymoonById[item.resourceId];
-    const named = target as { name?: unknown; title?: unknown; businessName?: unknown; city?: string; providerRef?: string | null } | undefined;
+    const visual = target as
+      | {
+          name?: unknown;
+          title?: unknown;
+          businessName?: unknown;
+          city?: string;
+          country?: string;
+          coverKey?: string | null;
+          logoKey?: string | null;
+          galleryKeys?: unknown;
+          ratingAvg?: unknown;
+          startingPrice?: unknown;
+          dailyRate?: unknown;
+          nightlyRate?: unknown;
+          providerRef?: string | null;
+        }
+      | undefined;
     return {
       ...item,
-      name: named?.name ?? named?.title ?? named?.businessName ?? null,
-      city: named?.city ?? null,
-      providerRef: named?.providerRef ?? null,
+      name: visual?.name ?? visual?.title ?? visual?.businessName ?? null,
+      title: visual?.title ?? visual?.name ?? visual?.businessName ?? null,
+      city: visual?.city ?? null,
+      country: visual?.country ?? null,
+      coverKey: visual?.coverKey ?? visual?.logoKey ?? null,
+      logoKey: visual?.logoKey ?? null,
+      galleryKeys: visual?.galleryKeys ?? [],
+      ratingAvg: visual?.ratingAvg ?? null,
+      startingPrice: visual?.startingPrice ?? visual?.dailyRate ?? visual?.nightlyRate ?? null,
+      providerRef: visual?.providerRef ?? null,
     };
   });
 }

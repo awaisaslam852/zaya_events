@@ -9,6 +9,7 @@ class UserEntity {
     this.displayName,
     this.avatarKey,
     this.locale = 'en',
+    this.country,
     this.status,
     this.vendor,
   });
@@ -22,6 +23,7 @@ class UserEntity {
   final String? displayName;
   final String? avatarKey;
   final String locale;
+  final String? country;
   final String? status;
   final Map<String, dynamic>? vendor;
 

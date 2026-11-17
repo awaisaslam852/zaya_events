@@ -2,13 +2,36 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../core/sync/app_refresh.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/localized.dart';
+import '../../../../core/widgets/screen_header.dart';
 import '../../../../core/widgets/zaya_fields.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../domain/usecases/events_usecases.dart';
 
 const _venueTypes = ['Hall', 'Garden', 'Beach', 'Hotel', 'Villa', 'Outdoor', 'Restaurant'];
+
+String _venueTypeLabel(AppLocalizations l10n, String type) {
+  switch (type) {
+    case 'Hall':
+      return l10n.venueHall;
+    case 'Garden':
+      return l10n.venueGarden;
+    case 'Beach':
+      return l10n.venueBeach;
+    case 'Hotel':
+      return l10n.venueHotel;
+    case 'Villa':
+      return l10n.venueVilla;
+    case 'Outdoor':
+      return l10n.venueOutdoor;
+    case 'Restaurant':
+      return l10n.venueRestaurant;
+    default:
+      return type;
+  }
+}
 
 class EventEditorPage extends StatefulWidget {
   const EventEditorPage({super.key, this.id});
@@ -158,6 +181,7 @@ class _EventEditorPageState extends State<EventEditorPage> {
     result.fold(
       (failure) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(failure.message))),
       (_) {
+        AppRefresh.instance.afterEvent();
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.saveSuccess)));
         context.pop(true);
       },
@@ -204,17 +228,26 @@ class _EventEditorPageState extends State<EventEditorPage> {
     final l10n = AppLocalizations.of(context);
     final locale = Localizations.localeOf(context).languageCode;
     return Scaffold(
-      appBar: AppBar(title: Text(_editing ? l10n.editEvent : l10n.createEvent)),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
+      backgroundColor: AppTheme.canvas,
+      body: Column(
         children: [
-          ZayaSectionCard(
+          ScreenHeader(
+            showBack: true,
+            eyebrow: l10n.myEvents,
+            title: _editing ? l10n.editEvent : l10n.createEvent,
+            subtitle: l10n.eventDetails,
+          ),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+              children: [
+                ZayaSectionCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text('Event details', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
+                Text(l10n.eventDetails, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
                 const SizedBox(height: 6),
-                Text('One title is enough. Switch app language from Profile.', style: TextStyle(color: Colors.grey.shade700, fontSize: 13)),
+                Text(l10n.eventLanguageHint, style: TextStyle(color: Colors.grey.shade700, fontSize: 13)),
                 const SizedBox(height: 16),
                 if (_loading)
                   const Padding(
@@ -295,7 +328,7 @@ class _EventEditorPageState extends State<EventEditorPage> {
                   children: [
                     for (final type in _venueTypes)
                       ChoiceChip(
-                        label: Text(type),
+                        label: Text(_venueTypeLabel(l10n, type)),
                         selected: _venueType == type,
                         selectedColor: AppTheme.yellow,
                         onSelected: (_) => setState(() => _venueType = type),
@@ -330,6 +363,9 @@ class _EventEditorPageState extends State<EventEditorPage> {
                   icon: Icons.check_circle_outline,
                   onPressed: _save,
                 ),
+              ],
+            ),
+          ),
               ],
             ),
           ),

@@ -14,7 +14,7 @@ export const accommodationController = {
     sendSuccess(res, await accommodationService.list(req.query as unknown as z.infer<typeof accommodationListQuery>, req.user));
   }),
   get: handle(async (req, res) => {
-    sendSuccess(res, await accommodationService.get(String(req.params.id)));
+    sendSuccess(res, await accommodationService.get(String(req.params.id), req.user));
   }),
   calendar: handle(async (req, res) => {
     const from = typeof req.query.from === 'string' ? new Date(req.query.from) : undefined;
@@ -33,6 +33,7 @@ export const accommodationController = {
         user.role,
         String(req.params.id),
         req.body as z.infer<typeof accommodationPatch>,
+        user,
       ),
     );
   }),
@@ -49,6 +50,6 @@ export const accommodationController = {
   }),
   remove: handle(async (req, res) => {
     const user = actor(req);
-    sendSuccess(res, await accommodationService.remove(user.id, user.role, String(req.params.id)));
+    sendSuccess(res, await accommodationService.remove(user.id, user.role, String(req.params.id), user));
   }),
 };

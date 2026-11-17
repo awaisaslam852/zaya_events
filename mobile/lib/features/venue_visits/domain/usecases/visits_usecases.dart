@@ -29,3 +29,15 @@ class DecideVisit {
   Future<Either<Failure, VisitsItem>> call(String id, {required bool accepted}) =>
       _repository.decide(id, accepted: accepted);
 }
+
+class ApproveVisit {
+  ApproveVisit(this._repository);
+  final VisitsRepository _repository;
+  Future<Either<Failure, VisitsItem>> call(String id) => _repository.approve(id);
+}
+
+class CompleteVisit {
+  CompleteVisit(this._repository);
+  final VisitsRepository _repository;
+  Future<Either<Failure, VisitsItem>> call(String id) => _repository.complete(id);
+}

@@ -1,8 +1,8 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:zaya_events/core/bloc/safe_cubit.dart';
 import '../../domain/usecases/accommodations_usecases.dart';
 import 'accommodations_state.dart';
 
-class AccommodationsCubit extends Cubit<AccommodationsState> {
+class AccommodationsCubit extends SafeCubit<AccommodationsState> {
   AccommodationsCubit(this._list, this._get) : super(const AccommodationsState());
 
   final ListAccommodations _list;

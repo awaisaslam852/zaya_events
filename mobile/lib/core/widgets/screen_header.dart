@@ -9,6 +9,7 @@ class ScreenHeader extends StatelessWidget {
     this.subtitle,
     this.trailing,
     this.showBack = false,
+    this.compact = false,
   });
 
   final String eyebrow;
@@ -16,15 +17,29 @@ class ScreenHeader extends StatelessWidget {
   final String? subtitle;
   final Widget? trailing;
   final bool showBack;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
+    final showEyebrow = !compact && eyebrow.isNotEmpty;
+    final showSubtitle = !compact && subtitle != null && subtitle!.isNotEmpty;
     return Container(
       width: double.infinity,
-      color: AppTheme.navy,
-      padding: const EdgeInsets.fromLTRB(16, 52, 16, 24),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF00183D), Color(0xFF003580), Color(0xFF0B5BB5)],
+        ),
+      ),
+      padding: EdgeInsets.fromLTRB(
+        showBack ? 4 : 16,
+        MediaQuery.paddingOf(context).top + (compact ? 2 : 6),
+        12,
+        compact ? 10 : 22,
+      ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           if (showBack)
             IconButton(
@@ -35,42 +50,96 @@ class ScreenHeader extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (showEyebrow) ...[
+                  Text(
+                    eyebrow.toUpperCase(),
+                    style: const TextStyle(
+                      color: AppTheme.yellow,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.4,
+                      fontSize: 11,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
                 Text(
-                  eyebrow.toUpperCase(),
-                  style: const TextStyle(
-                    color: AppTheme.yellow,
+                  title,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: compact ? 20 : 26,
                     fontWeight: FontWeight.w800,
-                    letterSpacing: 1.4,
-                    fontSize: 11,
                   ),
                 ),
-                const SizedBox(height: 8),
-                Text(title, style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w800)),
-                if (subtitle != null) ...[
+                if (showSubtitle) ...[
                   const SizedBox(height: 6),
                   Text(subtitle!, style: const TextStyle(color: Colors.white70, height: 1.35)),
                 ],
               ],
             ),
           ),
-          if (trailing != null) Flexible(child: Align(alignment: Alignment.centerRight, child: trailing!)),
+          if (trailing != null)
+            Padding(
+              padding: EdgeInsets.only(top: compact || showBack ? 0 : 8),
+              child: trailing!,
+            ),
         ],
       ),
     );
   }
 }
 
-class StatusBadge extends StatelessWidget {
-  const StatusBadge({super.key, required this.label});
+class FilterPill extends StatelessWidget {
+  const FilterPill({
+    super.key,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
 
   final String label;
+  final bool selected;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final tone = switch (label.toUpperCase()) {
-      'CONFIRMED' || 'PAID' || 'APPROVED' || 'PUBLISHED' => const Color(0xFF0F766E),
-      'PENDING' || 'INQUIRY' || 'UNDER_REVIEW' || 'PLANNING' => const Color(0xFFB45309),
-      'REJECTED' || 'CANCELLED' => const Color(0xFFB91C1C),
+    return Material(
+      color: selected ? AppTheme.navy : Colors.white,
+      borderRadius: BorderRadius.circular(999),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(999),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: selected ? AppTheme.navy : AppTheme.line),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontWeight: FontWeight.w800,
+              fontSize: 12,
+              color: selected ? Colors.white : AppTheme.ink,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class StatusBadge extends StatelessWidget {
+  const StatusBadge({super.key, required this.label, this.code});
+
+  final String label;
+  final String? code;
+
+  @override
+  Widget build(BuildContext context) {
+    final tone = switch ((code ?? label).toUpperCase()) {
+      'CONFIRMED' || 'PAID' || 'APPROVED' || 'PUBLISHED' || 'COMPLETED' => const Color(0xFF0F766E),
+      'REQUESTED' || 'PENDING' || 'INQUIRY' || 'UNDER_REVIEW' || 'PLANNING' || 'RESCHEDULED' => const Color(0xFFB45309),
+      'REJECTED' || 'CANCELLED' || 'NO_SHOW' => const Color(0xFFB91C1C),
       _ => AppTheme.navy,
     };
     return Container(

@@ -33,29 +33,109 @@ class LocationMapCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    final l10n = AppLocalizations.of(context);
+    final place = (label ?? '').trim().isEmpty ? l10n.location : label!.trim();
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppTheme.line),
+        boxShadow: AppTheme.cardShadow,
+      ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          ListTile(
-            leading: const CircleAvatar(
-              backgroundColor: Color(0xFFDCEBFA),
-              child: Icon(Icons.map_outlined, color: AppTheme.navy),
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: _open,
+                child: SizedBox(
+                  height: 132,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      const DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [Color(0xFFD7E8F8), Color(0xFFB7D4F0), Color(0xFF9EC4EA)],
+                          ),
+                        ),
+                      ),
+                      CustomPaint(painter: _MapGridPainter()),
+                      Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                color: AppTheme.navy,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(color: AppTheme.navy.withValues(alpha: 0.28), blurRadius: 12, offset: const Offset(0, 6)),
+                                ],
+                              ),
+                              child: const Icon(Icons.place, color: AppTheme.yellow),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(l10n.openInMaps, style: const TextStyle(color: AppTheme.navy, fontWeight: FontWeight.w800, fontSize: 12)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
-            title: Text(label ?? 'Location'),
-            subtitle: Text('${latitude.toStringAsFixed(4)}, ${longitude.toStringAsFixed(4)}'),
-            trailing: const Icon(Icons.open_in_new, size: 18),
-            onTap: _open,
           ),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton.icon(
-              onPressed: _directions,
-              icon: const Icon(Icons.directions),
-              label: Text(AppLocalizations.of(context).getDirections),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(place, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: AppTheme.ink)),
+                      const SizedBox(height: 2),
+                      Text(l10n.location, style: const TextStyle(color: AppTheme.muted, fontWeight: FontWeight.w600, fontSize: 12)),
+                    ],
+                  ),
+                ),
+                FilledButton.icon(
+                  onPressed: _directions,
+                  icon: const Icon(Icons.directions, size: 18),
+                  label: Text(l10n.getDirections),
+                ),
+              ],
             ),
           ),
         ],
       ),
     );
   }
+}
+
+class _MapGridPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.45)
+      ..strokeWidth = 1;
+    const step = 22.0;
+    for (var x = 0.0; x < size.width; x += step) {
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
+    }
+    for (var y = 0.0; y < size.height; y += step) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

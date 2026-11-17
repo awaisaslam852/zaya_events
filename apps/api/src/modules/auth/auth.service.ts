@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import { Role, UserStatus, type User, type Vendor } from '@prisma/client';
 import { env } from '../../config/env.js';
+import { parseCountryList } from '../../lib/admin-scope.js';
 import { ConflictError, UnauthorizedError, ValidationAppError } from '../../lib/errors.js';
 import { sendMail } from '../../lib/mailer.js';
 import { authRepository, type UserWithVendor } from './auth.repository.js';
@@ -32,6 +33,8 @@ export type PublicUser = {
   avatarKey: string | null;
   locale: string;
   country: string | null;
+  isSuperAdmin: boolean;
+  allowedCountries: string[];
   emailVerifiedAt: Date | null;
   vendor: Vendor | null;
 };
@@ -55,6 +58,8 @@ function toPublicUser(user: UserWithVendor): PublicUser {
     avatarKey: user.avatarKey,
     locale: user.locale,
     country: user.country,
+    isSuperAdmin: user.isSuperAdmin,
+    allowedCountries: parseCountryList(user.allowedCountries),
     emailVerifiedAt: user.emailVerifiedAt,
     vendor: user.vendor,
   };
@@ -103,8 +108,7 @@ export const authService = {
             locale: input.locale,
             country: input.country,
             city: input.city,
-            legalName: input.legalName,
-            taxId: input.taxId,
+            legalName: input.legalName?.trim() || input.businessName?.en,
             website: input.website || undefined,
             businessName: input.businessName ?? { en: `${input.firstName} ${input.lastName}`, ar: `${input.firstName} ${input.lastName}` },
             description: input.description ?? { en: '', ar: '' },

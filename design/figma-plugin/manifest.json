@@ -1,0 +1,12 @@
+{
+  "name": "Zaya Events — Generate UI",
+  "id": "com.zaya.events.generate-ui",
+  "api": "1.0.0",
+  "main": "code.js",
+  "ui": "ui.html",
+  "editorType": ["figma"],
+  "documentAccess": "dynamic-page",
+  "networkAccess": {
+    "allowedDomains": ["none"]
+  }
+}

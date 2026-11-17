@@ -98,8 +98,8 @@ export function SettingsPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-3xl font-extrabold text-[#003580]">{t('nav.settings')}</h1>
-        <p className="text-sm text-muted-foreground">Platform keys, notification flags, and connected services.</p>
+        <h1 className="text-2xl font-extrabold text-[#003580] sm:text-3xl">{t('nav.settings')}</h1>
+        <p className="text-sm text-muted-foreground">{t('common.settingsHint')}</p>
       </div>
     <div className="grid gap-4 lg:grid-cols-2">
       <Card>

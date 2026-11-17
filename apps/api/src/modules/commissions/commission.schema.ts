@@ -13,3 +13,19 @@ export const commissionRateBody = z.object({
   isDefault: z.boolean().default(false),
   isActive: z.boolean().default(true),
 });
+
+export const countryCodeParam = z.object({
+  country: z
+    .string()
+    .length(2)
+    .transform((value) => value.toUpperCase()),
+});
+
+export const commissionPolicyPatch = z
+  .object({
+    hqShareRate: z.number().min(0).max(100).optional(),
+    defaultVendorRate: z.number().min(0).max(100).optional(),
+  })
+  .refine((value) => value.hqShareRate !== undefined || value.defaultVendorRate !== undefined, {
+    message: 'Provide hqShareRate or defaultVendorRate',
+  });

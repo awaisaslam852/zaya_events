@@ -5,6 +5,8 @@ import { validate } from '../../middleware/validate.js';
 import { idParamSchema } from '../../lib/common.js';
 import { bookingController } from './booking.controller.js';
 import { bookingCreateSchema, bookingListQuery, bookingPatchSchema, bookingTransitionSchema } from './booking.schema.js';
+import { reviewController } from '../reviews/review.controller.js';
+import { reviewBodySchema } from '../reviews/review.schema.js';
 
 export const bookingsRouter = Router();
 
@@ -71,4 +73,11 @@ bookingsRouter.post(
   requireRole('vendor', 'admin'),
   validate({ params: idParamSchema, body: bookingTransitionSchema }),
   bookingController.reject,
+);
+bookingsRouter.post(
+  '/:id/reviews',
+  requireAuth,
+  requireRole('customer', 'vendor'),
+  validate({ params: idParamSchema, body: reviewBodySchema }),
+  reviewController.create,
 );

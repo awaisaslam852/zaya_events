@@ -6,6 +6,38 @@ class ApiException implements Exception {
   final Failure failure;
 }
 
+Map<String, String>? parseZodFieldErrors(dynamic details) {
+  if (details is! Map) {
+    return null;
+  }
+  final raw = details['fieldErrors'];
+  if (raw is! Map) {
+    return null;
+  }
+  final mapped = <String, String>{};
+  raw.forEach((key, value) {
+    if (value is List && value.isNotEmpty) {
+      final first = value.first?.toString();
+      if (first != null && first.isNotEmpty) {
+        mapped[key.toString()] = first;
+      }
+    } else if (value is String && value.isNotEmpty) {
+      mapped[key.toString()] = value;
+    }
+  });
+  return mapped.isEmpty ? null : mapped;
+}
+
+Failure failureFromApiError(Map err, {int? statusCode}) {
+  final message = err['message']?.toString() ?? 'errorGeneric';
+  final code = err['code']?.toString();
+  final fieldErrors = parseZodFieldErrors(err['details']);
+  if (statusCode == 401) {
+    return AuthFailure(message, code: code, fieldErrors: fieldErrors);
+  }
+  return ServerFailure(message, code: code, fieldErrors: fieldErrors);
+}
+
 Failure mapDioError(DioException error) {
   if (error.type == DioExceptionType.connectionError ||
       error.type == DioExceptionType.connectionTimeout ||
@@ -13,18 +45,15 @@ Failure mapDioError(DioException error) {
       error.type == DioExceptionType.sendTimeout) {
     final base = error.requestOptions.baseUrl;
     return NetworkFailure(
-      'Cannot reach API at $base. On Android use 10.0.2.2 (emulator) or your Mac Wi-Fi IP (phone), port 4000. Keep pnpm dev:api running.',
+      'Cannot reach API at $base.',
     );
   }
   final data = error.response?.data;
   if (data is Map && data['error'] is Map) {
-    final err = data['error'] as Map;
-    final message = err['message']?.toString() ?? 'errorGeneric';
-    final code = err['code']?.toString();
-    if (error.response?.statusCode == 401) {
-      return AuthFailure(message, code: code);
-    }
-    return ServerFailure(message, code: code);
+    return failureFromApiError(
+      data['error'] as Map,
+      statusCode: error.response?.statusCode,
+    );
   }
   return ServerFailure(error.message ?? 'errorGeneric');
 }
@@ -41,10 +70,9 @@ Map<String, dynamic> unwrap(dynamic body) {
     if (body['success'] == false) {
       final err = body['error'];
       throw ApiException(
-        ServerFailure(
-          err is Map ? err['message']?.toString() ?? 'errorGeneric' : 'errorGeneric',
-          code: err is Map ? err['code']?.toString() : null,
-        ),
+        err is Map
+            ? failureFromApiError(err)
+            : const ServerFailure('errorGeneric'),
       );
     }
     return body;

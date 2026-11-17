@@ -12,7 +12,7 @@ void main() {
     expect(homePathForRole(AppRole.admin), '/admin-redirect');
   });
 
-  testWidgets('customer nav shows home and events, not listings', (tester) async {
+  testWidgets('customer nav shows home and bookings, not catalog', (tester) async {
     await tester.pumpWidget(
       testApp(
         child: Scaffold(
@@ -25,8 +25,8 @@ void main() {
       ),
     );
     expect(find.text('Home'), findsOneWidget);
-    expect(find.text('My events'), findsOneWidget);
-    expect(find.text('Listings'), findsNothing);
+    expect(find.text('My bookings'), findsOneWidget);
+    expect(find.text('My catalog'), findsNothing);
     expect(find.text('Requests'), findsNothing);
   });
 
@@ -43,7 +43,7 @@ void main() {
       ),
     );
     expect(find.text('Dashboard'), findsOneWidget);
-    expect(find.text('Listings'), findsOneWidget);
+    expect(find.text('My catalog'), findsOneWidget);
     expect(find.text('Requests'), findsOneWidget);
     expect(find.text('My events'), findsNothing);
   });

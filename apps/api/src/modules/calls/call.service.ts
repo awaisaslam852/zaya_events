@@ -1,6 +1,8 @@
 import { randomInt } from 'node:crypto';
 import { CallStatus, Role } from '@prisma/client';
 import { env } from '../../config/env.js';
+import { adminScope, assertCountryAllowed, countryInFilter } from '../../lib/admin-scope.js';
+import type { AuthUser } from '../../middleware/auth.js';
 import { AppError, ForbiddenError, NotFoundError } from '../../lib/errors.js';
 import { paginated, skipTake } from '../../lib/common.js';
 import { emitToUser } from '../../lib/sockets.js';
@@ -28,13 +30,16 @@ function participant(userId: string, call: { callerId: string; calleeId: string 
 }
 
 export const callService = {
-  async initiate(userId: string, input: z.infer<typeof callInitiateSchema>) {
+  async initiate(userId: string, input: z.infer<typeof callInitiateSchema>, actor?: AuthUser) {
     if (input.calleeId === userId) {
       throw new AppError(422, 'INVALID_CALLEE', 'Cannot call yourself');
     }
     const callee = await prisma.user.findFirst({ where: { id: input.calleeId, deletedAt: null } });
     if (!callee) {
       throw new NotFoundError('Callee not found');
+    }
+    if (actor?.role === Role.ADMIN) {
+      assertCountryAllowed(adminScope(actor), callee.country);
     }
     const callerUid = randomInt(1, 1_000_000_000);
     const calleeUid = randomInt(1, 1_000_000_000);
@@ -47,18 +52,26 @@ export const callService = {
       callerUid,
       calleeUid,
     });
+    const saved = await callRepository.findById(call.id);
+    const callerName = [saved?.caller.firstName, saved?.caller.lastName].filter(Boolean).join(' ').trim();
+    const calleeName = [saved?.callee.firstName, saved?.callee.lastName].filter(Boolean).join(' ').trim();
     const payload = {
+      id: call.id,
       callId: call.id,
       channelName: call.channelName,
       callerId: userId,
       calleeId: input.calleeId,
+      callerName,
+      calleeName,
+      status: CallStatus.RINGING,
     };
     emitToUser('/calls', input.calleeId, 'call:incoming', payload);
+    emitToUser('/calls', input.calleeId, 'incoming_call', payload);
     await notificationService.notify({
       userId: input.calleeId,
       title: { en: 'Incoming call', ar: 'مكالمة واردة' },
       body: { en: 'You have an incoming call on Zaya Events.', ar: 'لديك مكالمة واردة علىزايا إيفنتس.' },
-      data: { type: 'incoming_call', callId: call.id, channelName: call.channelName },
+      data: { type: 'incoming_call', callId: call.id, channelName: call.channelName, callerName },
     });
     if (env.CALLS_WHATSAPP_ENABLED && callee.phone) {
       await whatsappProvider.sendTemplate({
@@ -71,7 +84,7 @@ export const callService = {
       void this.missIfRinging(call.id);
     }, RING_TIMEOUT_MS);
     pendingTimers.set(call.id, timer);
-    return callRepository.findById(call.id);
+    return saved;
   },
 
   async missIfRinging(id: string): Promise<void> {
@@ -154,24 +167,32 @@ export const callService = {
     return updated;
   },
 
-  async token(userId: string, role: Role, id: string) {
+  async token(user: AuthUser, id: string) {
     const call = await callRepository.findById(id);
     if (!call) {
       throw new NotFoundError('Call not found');
     }
-    if (role === Role.ADMIN && !participant(userId, call)) {
+    if (user.role === Role.ADMIN && !participant(user.id, call)) {
+      assertCountryAllowed(adminScope(user), call.caller.country ?? call.callee.country);
       return generateRtcToken(call.channelName, randomInt(1, 1_000_000_000), 'SUBSCRIBER');
     }
-    if (!participant(userId, call)) {
+    if (!participant(user.id, call)) {
       throw new ForbiddenError();
     }
-    const uid = call.callerId === userId ? call.callerUid : call.calleeUid;
+    const uid = call.callerId === user.id ? call.callerUid : call.calleeUid;
     return generateRtcToken(call.channelName, uid, 'PUBLISHER');
   },
 
-  async history(userId: string, role: Role, query: z.infer<typeof callHistoryQuery>) {
+  async history(user: AuthUser, query: z.infer<typeof callHistoryQuery>) {
     const { skip, take } = skipTake(query);
-    const [items, total] = await callRepository.list(role === Role.ADMIN ? null : userId, skip, take, query.q);
+    const country = user.role === Role.ADMIN ? countryInFilter(adminScope(user)) : undefined;
+    const [items, total] = await callRepository.list(
+      user.role === Role.ADMIN ? null : user.id,
+      skip,
+      take,
+      query.q,
+      country,
+    );
     return paginated(items, total, query);
   },
 };

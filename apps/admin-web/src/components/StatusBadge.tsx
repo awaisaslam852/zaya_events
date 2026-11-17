@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 
 const tones: Record<string, string> = {
@@ -18,10 +19,13 @@ const tones: Record<string, string> = {
   CANCELLED: 'bg-rose-50 text-rose-800 border-rose-200',
   REJECTED: 'bg-rose-50 text-rose-800 border-rose-200',
   FAILED: 'bg-rose-50 text-rose-800 border-rose-200',
+  SUPER: 'bg-[#003580]/10 text-[#003580] border-[#003580]/20',
 };
 
 export function StatusBadge({ status }: { status?: string | null }) {
+  const { t } = useTranslation();
   const value = status || '—';
+  const label = status ? t(`status.${status}`, { defaultValue: status.replaceAll('_', ' ') }) : '—';
   return (
     <span
       className={cn(
@@ -29,7 +33,7 @@ export function StatusBadge({ status }: { status?: string | null }) {
         tones[value] ?? 'bg-slate-50 text-slate-700 border-slate-200',
       )}
     >
-      {value.replaceAll('_', ' ')}
+      {label}
     </span>
   );
 }

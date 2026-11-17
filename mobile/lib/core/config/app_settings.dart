@@ -5,9 +5,12 @@ class AppSettings {
   String currency = 'AED';
   String siteName = 'Zaya Events';
 
-  Future<void> refresh(ApiClient client) async {
+  Future<void> refresh(ApiClient client, {String? country}) async {
     final result = await client.get<Map<String, dynamic>>(
       '/settings/public',
+      query: {
+        if (country != null && country.isNotEmpty) 'country': country,
+      },
       parse: (data) => Map<String, dynamic>.from(data as Map),
     );
     result.fold((_) {}, (map) {

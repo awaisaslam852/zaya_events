@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { api, unwrap, type Paginated } from '@/lib/api';
+import { getAppCurrency } from '@/lib/currency';
 import { loc, money } from '@/lib/utils';
 import { ListToolbar } from '@/components/ListToolbar';
 import { Button } from '@/components/ui/button';
@@ -38,7 +39,7 @@ export function PayoutsPage() {
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('');
   const [open, setOpen] = useState(false);
-  const form = useForm<Form>({ resolver: zodResolver(schema), defaultValues: { vendorId: '', amount: 0, currency: 'AED' } });
+  const form = useForm<Form>({ resolver: zodResolver(schema), defaultValues: { vendorId: '', amount: 0, currency: getAppCurrency() } });
   const list = useQuery({
     queryKey: ['payouts', page, status],
     queryFn: () =>
@@ -67,7 +68,7 @@ export function PayoutsPage() {
     <div>
       <ListToolbar
         title={t('nav.payouts')}
-        subtitle="Create partner payouts and mark them paid."
+        subtitle={t('pages.payouts')}
         search={q}
         onSearch={setQ}
         page={page}

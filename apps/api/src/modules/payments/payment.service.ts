@@ -1,6 +1,9 @@
 import { BookingStatus, InvoiceStatus, PaymentKind, PaymentStatus, Role, type Prisma } from '@prisma/client';
+import { adminScope, assertCountryAllowed, viaBookingVendorCountry } from '../../lib/admin-scope.js';
+import type { AuthUser } from '../../middleware/auth.js';
 import { AppError, ForbiddenError, NotFoundError } from '../../lib/errors.js';
 import { notDeleted, paginated, skipTake } from '../../lib/common.js';
+import { env } from '../../config/env.js';
 import { paymentGateway } from '../../integrations/payments/stripe.provider.js';
 import { notificationService } from '../notifications/notification.service.js';
 import { bookingService } from '../bookings/booking.service.js';
@@ -11,19 +14,19 @@ import type { z } from 'zod';
 import type { paymentCreateSchema, paymentListQuery } from './payment.schema.js';
 
 export const paymentService = {
-  async list(userId: string, role: Role, query: z.infer<typeof paymentListQuery>) {
+  async list(userId: string, role: Role, query: z.infer<typeof paymentListQuery>, actor?: AuthUser) {
     const { skip, take } = skipTake(query);
     const where: Prisma.PaymentWhereInput = {
       ...notDeleted,
       ...(query.bookingId ? { bookingId: query.bookingId } : {}),
       ...(query.q ? { booking: { bookingNumber: { contains: query.q, mode: 'insensitive' } } } : {}),
-      ...(role === Role.ADMIN ? {} : { userId }),
+      ...(role === Role.ADMIN ? viaBookingVendorCountry(adminScope(actor)) : { userId }),
     };
     const [items, total] = await paymentRepository.list(where, skip, take);
     return paginated(items, total, query);
   },
 
-  async get(userId: string, role: Role, id: string) {
+  async get(userId: string, role: Role, id: string, actor?: AuthUser) {
     const payment = await paymentRepository.findById(id);
     if (!payment) {
       throw new NotFoundError('Payment not found');
@@ -31,14 +34,17 @@ export const paymentService = {
     if (role !== Role.ADMIN && payment.userId !== userId) {
       throw new ForbiddenError();
     }
+    if (role === Role.ADMIN) {
+      assertCountryAllowed(adminScope(actor), payment.booking.vendor?.country ?? null);
+    }
     return payment;
   },
 
-  async createIntent(userId: string, role: Role, input: z.infer<typeof paymentCreateSchema>) {
+  async createIntent(userId: string, role: Role, input: z.infer<typeof paymentCreateSchema>, actor?: AuthUser) {
     if (input.kind === PaymentKind.REFUND) {
       throw new AppError(422, 'INVALID_KIND', 'Use the refund endpoint for refunds');
     }
-    const booking = await bookingService.get(userId, role, input.bookingId);
+    const booking = await bookingService.get(userId, role, input.bookingId, actor);
     const amount = input.kind === PaymentKind.DEPOSIT ? Number(booking.depositAmount) : Number(booking.balanceAmount);
     if (amount <= 0) {
       throw new AppError(422, 'INVALID_AMOUNT', 'Nothing to charge for this payment kind');
@@ -62,35 +68,45 @@ export const paymentService = {
       amount,
       currency: booking.currency,
       status: PaymentStatus.PROCESSING,
-      rawPayload: { checkoutUrl: intent.checkoutUrl, mock: intent.mock },
+      rawPayload: { mock: intent.mock },
     });
     return {
       payment,
       clientSecret: intent.clientSecret,
-      checkoutUrl: intent.checkoutUrl,
       mock: intent.mock,
-      publishableKey: intent.mock ? null : process.env.STRIPE_PUBLISHABLE_KEY ?? null,
+      publishableKey: intent.mock ? null : env.STRIPE_PUBLISHABLE_KEY || null,
     };
   },
 
-  async confirm(userId: string, role: Role, id: string) {
-    const payment = await this.get(userId, role, id);
+  async confirm(userId: string, role: Role, id: string, actor?: AuthUser) {
+    const payment = await this.get(userId, role, id, actor);
     if (payment.status === PaymentStatus.SUCCEEDED) {
       return payment;
     }
-    const mock = Boolean((payment.rawPayload as { mock?: boolean } | null)?.mock) || !process.env.STRIPE_SECRET_KEY;
-    if (!mock) {
-      throw new AppError(422, 'CONFIRM_NOT_ALLOWED', 'Live Stripe payments are confirmed by webhook or Checkout');
+    const mock = Boolean((payment.rawPayload as { mock?: boolean } | null)?.mock) || !env.STRIPE_SECRET_KEY;
+    if (mock) {
+      return this.applySuccess(payment.id);
     }
-    return this.applySuccess(payment.id);
+    if (!payment.providerRef) {
+      throw new AppError(422, 'PAYMENT_MISSING', 'Payment is missing a Stripe reference');
+    }
+    const status = await paymentGateway.intentStatus(payment.providerRef);
+    if (status === 'SUCCEEDED') {
+      return this.applySuccess(payment.id);
+    }
+    if (status === 'FAILED') {
+      await paymentRepository.update(payment.id, { status: PaymentStatus.FAILED });
+      throw new AppError(422, 'PAYMENT_FAILED', 'Card payment was not completed');
+    }
+    throw new AppError(422, 'PAYMENT_PROCESSING', 'Card payment is still processing');
   },
 
-  async refund(userId: string, role: Role, id: string, amount?: number) {
+  async refund(userId: string, role: Role, id: string, amount?: number, actor?: AuthUser) {
     if (role !== Role.ADMIN) {
       throw new ForbiddenError();
     }
-    const payment = await paymentRepository.findById(id);
-    if (!payment?.providerRef) {
+    const payment = await this.get(userId, role, id, actor);
+    if (!payment.providerRef) {
       throw new NotFoundError('Payment not found');
     }
     const result = await paymentGateway.refund(payment.providerRef, amount);
@@ -130,9 +146,11 @@ export const paymentService = {
     if (!payment) {
       throw new NotFoundError('Payment not found');
     }
-    if (payment.status !== PaymentStatus.SUCCEEDED) {
-      await paymentRepository.update(payment.id, { status: PaymentStatus.SUCCEEDED });
+    if (payment.status === PaymentStatus.SUCCEEDED) {
+      await financeService.issueForPayment(payment.id);
+      return paymentRepository.findById(payment.id);
     }
+    await paymentRepository.update(payment.id, { status: PaymentStatus.SUCCEEDED });
     const invoice = await financeService.issueForPayment(payment.id);
     const booking = await prisma.booking.findFirst({
       where: { id: payment.bookingId },
@@ -159,6 +177,18 @@ export const paymentService = {
       body: { en: `Invoice ${invoice.invoiceNumber} is ready.`, ar: `الفاتورة ${invoice.invoiceNumber} جاهزة.` },
       data: { type: 'payment_succeeded', paymentId: payment.id, bookingId: payment.bookingId, invoiceId: invoice.id },
     });
+    const vendorUserId = payment.booking.vendor?.userId;
+    if (vendorUserId && vendorUserId !== payment.userId) {
+      await notificationService.notify({
+        userId: vendorUserId,
+        title: { en: 'Payment received', ar: 'تم استلام الدفع' },
+        body: {
+          en: `A payment was received for booking ${payment.booking.bookingNumber}.`,
+          ar: `تم استلام دفع للحجز ${payment.booking.bookingNumber}.`,
+        },
+        data: { type: 'payment_succeeded', paymentId: payment.id, bookingId: payment.bookingId },
+      });
+    }
     return paymentRepository.findById(payment.id);
   },
 };

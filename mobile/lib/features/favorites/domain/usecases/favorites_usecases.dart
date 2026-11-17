@@ -17,3 +17,10 @@ class GetFavorites {
   Future<Either<Failure, FavoritesItem>> call(String id) => _repository.getById(id);
 }
 
+class RemoveFavorite {
+  RemoveFavorite(this._repository);
+  final FavoritesRepository _repository;
+  Future<Either<Failure, bool>> call({required String resourceType, required String resourceId}) =>
+      _repository.remove(resourceType: resourceType, resourceId: resourceId);
+}
+

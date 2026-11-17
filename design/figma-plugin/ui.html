@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      body {
+        font: 12px/1.45 Inter, system-ui, sans-serif;
+        margin: 0;
+        padding: 16px;
+        color: #1c1410;
+        background: #f6f1e8;
+      }
+      h1 {
+        font-size: 14px;
+        margin: 0 0 8px;
+      }
+      p {
+        margin: 0 0 14px;
+        color: #7a6a5c;
+      }
+      button {
+        width: 100%;
+        border: 0;
+        background: #3b2a24;
+        color: #f6f1e8;
+        padding: 10px 12px;
+        border-radius: 8px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      button:disabled {
+        opacity: 0.5;
+      }
+      #status {
+        margin-top: 10px;
+        min-height: 16px;
+        color: #7a6a5c;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Zaya Events UI</h1>
+    <p>Creates a new design file structure: design system, auth, customer, and vendor iPhone frames you can polish in Figma.</p>
+    <button id="go">Generate artboards</button>
+    <div id="status"></div>
+    <script>
+      const status = document.getElementById("status");
+      const go = document.getElementById("go");
+      go.onclick = () => {
+        go.disabled = true;
+        status.textContent = "Generating… keep Figma in the foreground.";
+        parent.postMessage({ pluginMessage: { type: "generate" } }, "*");
+      };
+      onmessage = (event) => {
+        const msg = event.data.pluginMessage;
+        if (!msg) return;
+        if (msg.type === "progress") status.textContent = msg.text;
+        if (msg.type === "done") {
+          status.textContent = msg.text;
+          go.disabled = false;
+        }
+        if (msg.type === "error") {
+          status.textContent = msg.text;
+          go.disabled = false;
+        }
+      };
+    </script>
+  </body>
+</html>

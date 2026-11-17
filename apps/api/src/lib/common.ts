@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from 'express';
 import { Role, type Vendor } from '@prisma/client';
+import type { AuthUser } from '../middleware/auth.js';
 import { z } from 'zod';
 import { env } from '../config/env.js';
 import { ForbiddenError, NotFoundError } from './errors.js';
@@ -79,7 +80,7 @@ export function handle(
   };
 }
 
-export function actor(req: Request): { id: string; role: Role; email: string } {
+export function actor(req: Request): AuthUser {
   if (!req.user) {
     throw new ForbiddenError();
   }

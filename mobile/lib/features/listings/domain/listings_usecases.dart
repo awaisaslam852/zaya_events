@@ -7,8 +7,11 @@ class ListingsRepository {
   ListingsRepository(this._client);
   final ApiClient _client;
 
-  Future<Either<Failure, Paginated<Map<String, dynamic>>>> list({int page = 1}) {
-    return _client.get('/listings', query: {'page': page}, parse: _page);
+  Future<Either<Failure, Paginated<Map<String, dynamic>>>> list({
+    int page = 1,
+    Map<String, dynamic>? query,
+  }) {
+    return _client.get('/listings', query: {'page': page, ...?query}, parse: _page);
   }
 
   Future<Either<Failure, Map<String, dynamic>>> getById(String id) =>
@@ -48,7 +51,8 @@ class ListingsRepository {
 class ListVendorListings {
   ListVendorListings(this._repo);
   final ListingsRepository _repo;
-  Future<Either<Failure, Paginated<Map<String, dynamic>>>> call() => _repo.list();
+  Future<Either<Failure, Paginated<Map<String, dynamic>>>> call({Map<String, dynamic>? query}) =>
+      _repo.list(query: query);
 }
 
 class CreateListing {

@@ -17,3 +17,15 @@ class GetNotifications {
   Future<Either<Failure, NotificationsItem>> call(String id) => _repository.getById(id);
 }
 
+class MarkNotificationRead {
+  MarkNotificationRead(this._repository);
+  final NotificationsRepository _repository;
+  Future<Either<Failure, bool>> call(String id) => _repository.markRead(id);
+}
+
+class MarkAllNotificationsRead {
+  MarkAllNotificationsRead(this._repository);
+  final NotificationsRepository _repository;
+  Future<Either<Failure, bool>> call() => _repository.markAllRead();
+}
+

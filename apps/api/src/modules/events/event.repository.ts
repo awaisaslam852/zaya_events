@@ -20,6 +20,7 @@ export const eventRepository = {
       where: { id, ...notDeleted },
       include: {
         category: true,
+        customer: { select: { id: true, country: true, firstName: true, lastName: true, email: true } },
         bookings: {
           where: notDeleted,
           include: {

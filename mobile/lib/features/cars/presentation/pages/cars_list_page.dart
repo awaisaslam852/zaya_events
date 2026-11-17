@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/config/browse_country.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/widgets/async_body.dart';
 import '../../../../core/widgets/property_card.dart';
@@ -16,7 +17,7 @@ class CarsListPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return BlocProvider(
-      create: (_) => sl<CarsCubit>()..load(),
+      create: (_) => sl<CarsCubit>()..load(query: browseQuery()),
       child: Scaffold(
         appBar: embedded ? null : AppBar(title: Text(l10n.cars)),
         body: BlocBuilder<CarsCubit, CarsState>(
@@ -25,7 +26,7 @@ class CarsListPage extends StatelessWidget {
               loading: state.loading,
               error: state.error,
               empty: state.items.isEmpty,
-              onRetry: () => context.read<CarsCubit>().load(),
+              onRetry: () => context.read<CarsCubit>().load(query: browseQuery()),
               child: CatalogFeed(
                 itemCount: state.items.length,
                 rawAt: (index) => state.items[index].raw,

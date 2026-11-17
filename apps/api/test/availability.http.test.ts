@@ -17,6 +17,7 @@ describe('availability overlap HTTP', () => {
         email,
         passwordHash: await bcrypt.hash(password, env.BCRYPT_ROUNDS),
         role: Role.ADMIN,
+        isSuperAdmin: true,
         status: UserStatus.ACTIVE,
         firstName: 'Avail',
         lastName: 'Admin',

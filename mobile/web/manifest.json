@@ -1,11 +1,11 @@
 {
-    "name": "zaya_events",
-    "short_name": "zaya_events",
+    "name": "Zaya Events",
+    "short_name": "Zaya",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "zaya events",
+    "background_color": "#003580",
+    "theme_color": "#003580",
+    "description": "Book venues, vendors and event services with Zaya Events",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

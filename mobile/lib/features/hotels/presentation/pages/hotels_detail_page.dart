@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/di/injection.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/async_body.dart';
 import '../../../../core/widgets/catalog_detail.dart';
+import '../../../../core/widgets/catalog_request_sheet.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../cubit/hotels_cubit.dart';
 import '../cubit/hotels_state.dart';
@@ -17,6 +19,7 @@ class HotelsDetailPage extends StatelessWidget {
     return BlocProvider(
       create: (_) => sl<HotelsCubit>()..loadOne(id),
       child: Scaffold(
+        backgroundColor: AppTheme.canvas,
         body: BlocBuilder<HotelsCubit, HotelsState>(
           builder: (context, state) {
             final item = state.detail;
@@ -32,18 +35,23 @@ class HotelsDetailPage extends StatelessWidget {
                       resourceType: 'HOTEL',
                       resourceId: item.id,
                       primaryLabel: l10n.bookNow,
-                      onPrimary: () async {
-                        final checkIn = DateTime.now().add(const Duration(days: 14));
-                        final error = await context.read<HotelsCubit>().book(
-                          id,
-                          checkIn: checkIn,
-                          checkOut: checkIn.add(const Duration(days: 3)),
-                        );
-                        if (!context.mounted) {
-                          return;
-                        }
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error ?? l10n.saveSuccess)));
-                      },
+                      onPrimary: () => CatalogRequest.open(
+                        context,
+                        mode: CatalogRequestMode.book,
+                        resourceType: 'HOTEL',
+                        resourceId: item.id,
+                        needsEndDate: true,
+                        needsGuests: true,
+                      ),
+                      secondaryLabel: l10n.addToCart,
+                      onSecondary: () => CatalogRequest.open(
+                        context,
+                        mode: CatalogRequestMode.addToCart,
+                        resourceType: 'HOTEL',
+                        resourceId: item.id,
+                        needsEndDate: true,
+                        needsGuests: true,
+                      ),
                     ),
             );
           },

@@ -6,18 +6,24 @@ import type { crmFollowUpBody, crmFollowUpPatch, crmInteractionBody, crmNoteBody
 
 export const crmController = {
   timeline: handle(async (req, res) => {
-    sendSuccess(res, await crmService.timeline(req.query as unknown as z.infer<typeof crmSubjectQuery>));
+    sendSuccess(
+      res,
+      await crmService.timeline(req.query as unknown as z.infer<typeof crmSubjectQuery>, actor(req)),
+    );
   }),
   note: handle(async (req, res) => {
-    sendSuccess(res, await crmService.addNote(actor(req).id, req.body as z.infer<typeof crmNoteBody>), 201);
+    sendSuccess(res, await crmService.addNote(actor(req), req.body as z.infer<typeof crmNoteBody>), 201);
   }),
   interaction: handle(async (req, res) => {
-    sendSuccess(res, await crmService.addInteraction(actor(req).id, req.body as z.infer<typeof crmInteractionBody>), 201);
+    sendSuccess(res, await crmService.addInteraction(actor(req), req.body as z.infer<typeof crmInteractionBody>), 201);
   }),
   followUp: handle(async (req, res) => {
-    sendSuccess(res, await crmService.addFollowUp(actor(req).id, req.body as z.infer<typeof crmFollowUpBody>), 201);
+    sendSuccess(res, await crmService.addFollowUp(actor(req), req.body as z.infer<typeof crmFollowUpBody>), 201);
   }),
   patchFollowUp: handle(async (req, res) => {
-    sendSuccess(res, await crmService.updateFollowUp(String(req.params.id), req.body as z.infer<typeof crmFollowUpPatch>));
+    sendSuccess(
+      res,
+      await crmService.updateFollowUp(String(req.params.id), req.body as z.infer<typeof crmFollowUpPatch>, actor(req)),
+    );
   }),
 };

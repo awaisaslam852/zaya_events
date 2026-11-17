@@ -1,14 +1,17 @@
 import { Prisma, Role } from '@prisma/client';
+import { adminScope, assertCountryAllowed, publicCatalogCountry, recordCountry, viaVendorCountry } from '../../lib/admin-scope.js';
+import { currencyForCountry } from '../../lib/countries.js';
 import { ForbiddenError, NotFoundError } from '../../lib/errors.js';
 import { findVendorForUser, notDeleted, paginated, skipTake } from '../../lib/common.js';
 import { listingRepository } from './listing.repository.js';
 import { serviceCategoryRepository } from '../service-categories/service-category.repository.js';
 import { prisma } from '../../lib/prisma.js';
+import { reviewService } from '../reviews/review.service.js';
 import type { z } from 'zod';
 import type { listingBody, listingListQuery, listingPackageBody, listingPatch } from './listing.schema.js';
 
 export const listingService = {
-  async list(query: z.infer<typeof listingListQuery>, user?: { id: string; role: Role }) {
+  async list(query: z.infer<typeof listingListQuery>, user?: { id: string; role: Role; isSuperAdmin?: boolean; allowedCountries?: string[] }) {
     const { skip, take } = skipTake(query);
     let vendorScope: string | undefined = query.vendorId;
     if (user?.role === Role.VENDOR) {
@@ -17,6 +20,8 @@ export const listingService = {
     }
     const where: Prisma.ListingWhereInput = {
       ...notDeleted,
+      ...(user?.role === Role.ADMIN ? viaVendorCountry(adminScope(user)) : {}),
+      ...(user?.role !== Role.ADMIN && user?.role !== Role.VENDOR ? publicCatalogCountry(query.country) : {}),
       ...(query.categoryId ? { categoryId: query.categoryId } : {}),
       ...(vendorScope ? { vendorId: vendorScope } : {}),
       ...(query.city ? { city: query.city } : {}),
@@ -31,12 +36,16 @@ export const listingService = {
     const [items, total] = await listingRepository.list(where, skip, take);
     return paginated(items, total, query);
   },
-  async get(id: string) {
+  async get(id: string, user?: { id: string; role: Role; isSuperAdmin?: boolean; allowedCountries?: string[] }) {
     const row = await listingRepository.findById(id);
     if (!row) {
       throw new NotFoundError('Listing not found');
     }
-    return row;
+    if (user?.role === Role.ADMIN) {
+      assertCountryAllowed(adminScope(user), recordCountry(row));
+    }
+    const reviews = await reviewService.publicFor({ listingId: row.id });
+    return { ...row, reviews };
   },
   async create(userId: string, role: Role, input: z.infer<typeof listingBody>) {
     const vendor = await findVendorForUser(userId);
@@ -47,17 +56,19 @@ export const listingService = {
     if (!category?.isActive) {
       throw new NotFoundError('Service category not found');
     }
+    const country = vendor.country || undefined;
+    const currency = currencyForCountry(country, input.currency);
     return listingRepository.create({
       vendor: { connect: { id: vendor.id } },
       category: { connect: { id: input.categoryId } },
       title: input.title,
       description: input.description,
       city: input.city,
-      country: input.country,
+      country,
       coverKey: input.coverKey,
       galleryKeys: (input.galleryKeys ?? []) as Prisma.InputJsonValue,
       startingPrice: input.startingPrice,
-      currency: input.currency,
+      currency,
       isPublished: input.isPublished,
       customFieldValues: input.customFieldValues as Prisma.InputJsonValue,
       packages: {
@@ -65,20 +76,26 @@ export const listingService = {
           name: pkg.name,
           description: pkg.description,
           priceAmount: pkg.priceAmount,
-          currency: pkg.currency,
+          currency: currencyForCountry(country, pkg.currency),
           durationHours: pkg.durationHours,
           isActive: pkg.isActive,
         })),
       },
     });
   },
-  async update(userId: string, role: Role, id: string, input: z.infer<typeof listingPatch>) {
-    const row = await this.assertOwner(userId, role, id);
+  async update(
+    userId: string,
+    role: Role,
+    id: string,
+    input: z.infer<typeof listingPatch>,
+    user?: { id: string; role: Role; isSuperAdmin?: boolean; allowedCountries?: string[] },
+  ) {
+    const row = await this.assertOwner(userId, role, id, user);
     return listingRepository.update(row.id, {
       title: input.title,
       description: input.description,
       city: input.city,
-      country: input.country,
+      country: row.vendor?.country ?? row.country,
       coverKey: input.coverKey,
       galleryKeys: input.galleryKeys as Prisma.InputJsonValue | undefined,
       startingPrice: input.startingPrice,
@@ -88,20 +105,31 @@ export const listingService = {
       ...(input.categoryId ? { category: { connect: { id: input.categoryId } } } : {}),
     });
   },
-  async remove(userId: string, role: Role, id: string) {
-    const row = await this.assertOwner(userId, role, id);
+  async remove(
+    userId: string,
+    role: Role,
+    id: string,
+    user?: { id: string; role: Role; isSuperAdmin?: boolean; allowedCountries?: string[] },
+  ) {
+    const row = await this.assertOwner(userId, role, id, user);
     await listingRepository.update(row.id, { deletedAt: new Date() });
     return { deleted: true };
   },
-  async addPackage(userId: string, role: Role, listingId: string, input: z.infer<typeof listingPackageBody>) {
-    await this.assertOwner(userId, role, listingId);
+  async addPackage(
+    userId: string,
+    role: Role,
+    listingId: string,
+    input: z.infer<typeof listingPackageBody>,
+    user?: { id: string; role: Role; isSuperAdmin?: boolean; allowedCountries?: string[] },
+  ) {
+    const listing = await this.assertOwner(userId, role, listingId, user);
     return prisma.listingPackage.create({
       data: {
         listing: { connect: { id: listingId } },
         name: input.name as Prisma.InputJsonValue,
         description: input.description as Prisma.InputJsonValue,
         priceAmount: input.priceAmount,
-        currency: input.currency,
+        currency: currencyForCountry(listing.country ?? listing.vendor?.country, input.currency),
         durationHours: input.durationHours,
         isActive: input.isActive,
       },
@@ -113,8 +141,9 @@ export const listingService = {
     listingId: string,
     packageId: string,
     input: Partial<z.infer<typeof listingPackageBody>>,
+    user?: { id: string; role: Role; isSuperAdmin?: boolean; allowedCountries?: string[] },
   ) {
-    await this.assertOwner(userId, role, listingId);
+    await this.assertOwner(userId, role, listingId, user);
     const pkg = await prisma.listingPackage.findFirst({ where: { id: packageId, listingId, deletedAt: null } });
     if (!pkg) {
       throw new NotFoundError('Package not found');
@@ -131,8 +160,13 @@ export const listingService = {
       },
     });
   },
-  async assertOwner(userId: string, role: Role, id: string) {
-    const row = await this.get(id);
+  async assertOwner(
+    userId: string,
+    role: Role,
+    id: string,
+    user?: { id: string; role: Role; isSuperAdmin?: boolean; allowedCountries?: string[] },
+  ) {
+    const row = await this.get(id, user ?? { id: userId, role });
     if (role !== Role.ADMIN) {
       const vendor = await findVendorForUser(userId);
       if (row.vendorId !== vendor.id) {

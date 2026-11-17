@@ -80,7 +80,7 @@ export function MessagesPage() {
 
   return (
     <div className="grid min-h-[70vh] gap-4 md:grid-cols-[16rem_1fr]">
-      <aside className="space-y-1 rounded-md border p-2">
+      <aside className={`space-y-1 rounded-md border p-2 ${active ? 'hidden md:block' : 'block'}`}>
         <Button type="button" variant="outline" size="sm" className="mb-2 w-full" onClick={() => support.mutate()}>
           Contact support
         </Button>
@@ -93,12 +93,17 @@ export function MessagesPage() {
           );
         })}
       </aside>
-      <section className="flex flex-col rounded-md border p-3">
-        {active && peerId ? (
-          <div className="mb-2 flex justify-end">
-            <Button type="button" variant="outline" size="sm" onClick={() => call.mutate(peerId)}>
-              {t('nav.calls')}
+      <section className={`flex-col rounded-md border p-3 ${active ? 'flex' : 'hidden md:flex'}`}>
+        {active ? (
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <Button type="button" variant="outline" size="sm" className="md:hidden" onClick={() => setActive(null)}>
+              {t('common.back')}
             </Button>
+            {peerId ? (
+              <Button type="button" variant="outline" size="sm" className="ms-auto" onClick={() => call.mutate(peerId)}>
+                {t('nav.calls')}
+              </Button>
+            ) : null}
           </div>
         ) : null}
         <div className="flex-1 space-y-2 overflow-y-auto">

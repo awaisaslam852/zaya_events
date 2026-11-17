@@ -32,9 +32,11 @@ export function bootstrapSockets(httpServer: HttpServer): Server {
   chat.use(authenticate as never);
   chat.on('connection', (socket) => {
     const userId = (socket.data as { userId: string }).userId;
-    void socket.join(`user:${userId}`);
-    logger.info({ socketId: socket.id, userId }, 'chat namespace connected');
-    socket.emit('chat:ready', { namespace: '/chat' });
+    void (async () => {
+      await socket.join(`user:${userId}`);
+      logger.info({ socketId: socket.id, userId }, 'chat namespace connected');
+      socket.emit('chat:ready', { namespace: '/chat' });
+    })();
     socket.on('disconnect', (reason) => {
       logger.info({ socketId: socket.id, reason }, 'chat namespace disconnected');
     });
@@ -44,9 +46,11 @@ export function bootstrapSockets(httpServer: HttpServer): Server {
   calls.use(authenticate as never);
   calls.on('connection', (socket) => {
     const userId = (socket.data as { userId: string }).userId;
-    void socket.join(`user:${userId}`);
-    logger.info({ socketId: socket.id, userId }, 'calls namespace connected');
-    socket.emit('calls:ready', { namespace: '/calls' });
+    void (async () => {
+      await socket.join(`user:${userId}`);
+      logger.info({ socketId: socket.id, userId }, 'calls namespace connected');
+      socket.emit('calls:ready', { namespace: '/calls' });
+    })();
     socket.on('disconnect', (reason) => {
       logger.info({ socketId: socket.id, reason }, 'calls namespace disconnected');
     });

@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import Stripe from 'stripe';
 import { env } from '../../config/env.js';
 import { AppError } from '../../lib/errors.js';
-import type { CreateIntentInput, CreateIntentResult, PaymentGateway } from './payment.provider.js';
+import type { CreateIntentInput, CreateIntentResult, IntentStatus, PaymentGateway } from './payment.provider.js';
 
 function stripe(): Stripe {
   if (!env.STRIPE_SECRET_KEY) {
@@ -17,9 +17,12 @@ export class MockPaymentGateway implements PaymentGateway {
     return {
       providerRef: id,
       clientSecret: `mock_secret_${id}`,
-      checkoutUrl: undefined,
       mock: true,
     };
+  }
+
+  async intentStatus(_providerRef: string): Promise<IntentStatus> {
+    return 'SUCCEEDED';
   }
 
   async refund(providerRef: string, _amount?: number): Promise<{ refundId: string }> {
@@ -45,32 +48,42 @@ export class StripePaymentGateway implements PaymentGateway {
   async createIntent(input: CreateIntentInput): Promise<CreateIntentResult> {
     const client = stripe();
     const amount = Math.round(input.amount * 100);
-    const session = await client.checkout.sessions.create({
-      mode: 'payment',
-      success_url: `${env.API_URL}/api/v1/payments/complete?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${env.API_URL}/api/v1/payments/complete?canceled=1`,
+    const paymentIntent = await client.paymentIntents.create({
+      amount,
+      currency: input.currency.toLowerCase(),
+      payment_method_types: ['card'],
       metadata: input.metadata,
-      line_items: [
-        {
-          quantity: 1,
-          price_data: {
-            currency: input.currency.toLowerCase(),
-            unit_amount: amount,
-            product_data: {
-              name: `Zaya Events ${input.metadata.kind ?? 'payment'}`,
-              description: `Booking ${input.metadata.bookingId ?? ''}`.trim(),
-            },
-          },
-        },
-      ],
-      payment_intent_data: { metadata: input.metadata },
+      description: `Zaya Events ${input.metadata.kind ?? 'payment'} · booking ${input.metadata.bookingId ?? ''}`.trim(),
     });
+    if (!paymentIntent.client_secret) {
+      throw new AppError(500, 'STRIPE_INTENT_FAILED', 'Stripe did not return a client secret');
+    }
     return {
-      providerRef: session.id,
-      clientSecret: session.client_secret ?? session.id,
-      checkoutUrl: session.url ?? undefined,
+      providerRef: paymentIntent.id,
+      clientSecret: paymentIntent.client_secret,
       mock: false,
     };
+  }
+
+  async intentStatus(providerRef: string): Promise<IntentStatus> {
+    if (providerRef.startsWith('cs_')) {
+      const session = await stripe().checkout.sessions.retrieve(providerRef);
+      if (session.payment_status === 'paid') {
+        return 'SUCCEEDED';
+      }
+      if (session.status === 'expired') {
+        return 'FAILED';
+      }
+      return 'PROCESSING';
+    }
+    const paymentIntent = await stripe().paymentIntents.retrieve(providerRef);
+    if (paymentIntent.status === 'succeeded') {
+      return 'SUCCEEDED';
+    }
+    if (paymentIntent.status === 'canceled' || paymentIntent.status === 'requires_payment_method') {
+      return 'FAILED';
+    }
+    return 'PROCESSING';
   }
 
   async refund(providerRef: string, amount?: number): Promise<{ refundId: string }> {

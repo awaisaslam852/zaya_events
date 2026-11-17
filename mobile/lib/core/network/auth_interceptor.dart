@@ -3,6 +3,22 @@ import '../config/app_config.dart';
 import '../storage/token_storage.dart';
 import 'api_envelope.dart';
 
+bool shouldAttemptSessionRefresh(DioException err) {
+  if (err.response?.statusCode != 401) {
+    return false;
+  }
+  final path = err.requestOptions.path;
+  if (path.contains('/auth/login') ||
+      path.contains('/auth/register') ||
+      path.contains('/auth/refresh') ||
+      path.contains('/auth/forgot') ||
+      path.contains('/settings/public')) {
+    return false;
+  }
+  final authorization = err.requestOptions.headers['Authorization']?.toString();
+  return authorization != null && authorization.startsWith('Bearer ');
+}
+
 class AuthInterceptor extends QueuedInterceptor {
   AuthInterceptor({
     required this.storage,
@@ -28,7 +44,7 @@ class AuthInterceptor extends QueuedInterceptor {
 
   @override
   Future<void> onError(DioException err, ErrorInterceptorHandler handler) async {
-    if (err.response?.statusCode != 401 || err.requestOptions.path.contains('/auth/refresh')) {
+    if (!shouldAttemptSessionRefresh(err)) {
       handler.next(err);
       return;
     }
@@ -39,8 +55,7 @@ class AuthInterceptor extends QueuedInterceptor {
     _refreshing = true;
     try {
       final refresh = await storage.readRefresh();
-      if (refresh == null) {
-        onForceLogout?.call();
+      if (refresh == null || refresh.isEmpty) {
         handler.next(err);
         return;
       }

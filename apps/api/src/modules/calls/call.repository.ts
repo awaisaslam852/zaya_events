@@ -10,12 +10,12 @@ export const callRepository = {
     return prisma.call.findFirst({
       where: { id, ...notDeleted },
       include: {
-        caller: { select: { id: true, firstName: true, lastName: true, phone: true } },
-        callee: { select: { id: true, firstName: true, lastName: true, phone: true } },
+        caller: { select: { id: true, firstName: true, lastName: true, phone: true, country: true } },
+        callee: { select: { id: true, firstName: true, lastName: true, phone: true, country: true } },
       },
     });
   },
-  list(userId: string | null, skip: number, take: number, q?: string) {
+  list(userId: string | null, skip: number, take: number, q?: string, country?: Prisma.StringFilter | string) {
     const search: Prisma.CallWhereInput | undefined = q
       ? {
           OR: [
@@ -29,6 +29,7 @@ export const callRepository = {
       ...notDeleted,
       AND: [
         ...(userId ? [{ OR: [{ callerId: userId }, { calleeId: userId }] }] : []),
+        ...(country ? [{ OR: [{ caller: { country } }, { callee: { country } }] }] : []),
         ...(search ? [search] : []),
       ],
     };

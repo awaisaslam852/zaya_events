@@ -24,4 +24,30 @@ export const commissionRepository = {
   updateRate(id: string, data: Prisma.CommissionRateUpdateInput) {
     return prisma.commissionRate.update({ where: { id }, data });
   },
+  listPolicies(countries?: string[]) {
+    return prisma.countryCommissionPolicy.findMany({
+      where: countries ? { country: { in: countries } } : undefined,
+      orderBy: { country: 'asc' },
+    });
+  },
+  findPolicy(country: string) {
+    return prisma.countryCommissionPolicy.findUnique({ where: { country } });
+  },
+  upsertPolicy(
+    country: string,
+    data: { hqShareRate?: number; defaultVendorRate?: number },
+  ) {
+    return prisma.countryCommissionPolicy.upsert({
+      where: { country },
+      create: {
+        country,
+        hqShareRate: data.hqShareRate ?? 30,
+        defaultVendorRate: data.defaultVendorRate ?? 12,
+      },
+      update: {
+        ...(data.hqShareRate !== undefined ? { hqShareRate: data.hqShareRate } : {}),
+        ...(data.defaultVendorRate !== undefined ? { defaultVendorRate: data.defaultVendorRate } : {}),
+      },
+    });
+  },
 };

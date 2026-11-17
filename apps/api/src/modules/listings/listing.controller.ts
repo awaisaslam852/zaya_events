@@ -9,7 +9,7 @@ export const listingController = {
     sendSuccess(res, await listingService.list(req.query as unknown as z.infer<typeof listingListQuery>, req.user));
   }),
   get: handle(async (req, res) => {
-    sendSuccess(res, await listingService.get(String(req.params.id)));
+    sendSuccess(res, await listingService.get(String(req.params.id), req.user));
   }),
   create: handle(async (req, res) => {
     const user = actor(req);
@@ -19,18 +19,18 @@ export const listingController = {
     const user = actor(req);
     sendSuccess(
       res,
-      await listingService.update(user.id, user.role, String(req.params.id), req.body as z.infer<typeof listingPatch>),
+      await listingService.update(user.id, user.role, String(req.params.id), req.body as z.infer<typeof listingPatch>, user),
     );
   }),
   remove: handle(async (req, res) => {
     const user = actor(req);
-    sendSuccess(res, await listingService.remove(user.id, user.role, String(req.params.id)));
+    sendSuccess(res, await listingService.remove(user.id, user.role, String(req.params.id), user));
   }),
   addPackage: handle(async (req, res) => {
     const user = actor(req);
     sendSuccess(
       res,
-      await listingService.addPackage(user.id, user.role, String(req.params.id), req.body as z.infer<typeof listingPackageBody>),
+      await listingService.addPackage(user.id, user.role, String(req.params.id), req.body as z.infer<typeof listingPackageBody>, user),
       201,
     );
   }),
@@ -44,6 +44,7 @@ export const listingController = {
         String(req.params.id),
         String(req.params.packageId),
         req.body as Partial<z.infer<typeof listingPackageBody>>,
+        user,
       ),
     );
   }),

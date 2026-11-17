@@ -30,4 +30,13 @@ export const venueRepository = {
   addPackage(venueId: string, data: Prisma.VenuePackageCreateWithoutVenueInput) {
     return prisma.venuePackage.create({ data: { ...data, venue: { connect: { id: venueId } } } });
   },
+  findPackage(id: string) {
+    return prisma.venuePackage.findFirst({ where: { id, ...notDeleted } });
+  },
+  updatePackage(id: string, data: Prisma.VenuePackageUpdateInput) {
+    return prisma.venuePackage.update({ where: { id }, data });
+  },
+  removePackage(id: string) {
+    return prisma.venuePackage.update({ where: { id }, data: { deletedAt: new Date(), isActive: false } });
+  },
 };

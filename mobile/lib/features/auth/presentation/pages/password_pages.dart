@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/di/injection.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/screen_header.dart';
 import '../../../../core/widgets/zaya_fields.dart';
 import '../../../../l10n/app_localizations.dart';
@@ -26,10 +27,11 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return Scaffold(
+      backgroundColor: AppTheme.canvas,
       body: ListView(
         padding: EdgeInsets.zero,
         children: [
-          ScreenHeader(eyebrow: 'ZAYA', title: l10n.forgotPassword, showBack: true),
+          ScreenHeader(eyebrow: 'ZAYA', title: l10n.forgotPassword, showBack: true, subtitle: l10n.sendResetLink),
           Padding(
             padding: const EdgeInsets.all(16),
             child: ZayaSectionCard(
@@ -87,6 +89,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return Scaffold(
+      backgroundColor: AppTheme.canvas,
       body: ListView(
         padding: EdgeInsets.zero,
         children: [

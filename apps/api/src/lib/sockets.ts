@@ -22,8 +22,15 @@ export function getCallsNamespace(): Namespace | undefined {
 export function emitToUser(namespace: '/chat' | '/calls', userId: string, event: string, payload: unknown): void {
   const nsp = namespace === '/chat' ? getChatNamespace() : getCallsNamespace();
   if (!nsp) {
-    logger.debug({ namespace, userId, event }, 'socket emit skipped (io not ready)');
+    logger.warn({ namespace, userId, event }, 'socket emit skipped (io not ready)');
     return;
   }
-  nsp.to(`user:${userId}`).emit(event, payload);
+  const room = `user:${userId}`;
+  const listeners = nsp.adapter.rooms.get(room)?.size ?? 0;
+  if (listeners === 0) {
+    logger.warn({ namespace, userId, event }, 'socket emit with no connected listener');
+  } else {
+    logger.info({ namespace, userId, event, listeners }, 'socket emit');
+  }
+  nsp.to(room).emit(event, payload);
 }

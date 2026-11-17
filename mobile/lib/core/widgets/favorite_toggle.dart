@@ -1,13 +1,21 @@
 import 'package:flutter/material.dart';
 import '../di/injection.dart';
 import '../network/api_client.dart';
+import '../sync/app_refresh.dart';
+import '../theme/app_theme.dart';
 import '../../l10n/app_localizations.dart';
 
 class FavoriteToggleButton extends StatefulWidget {
-  const FavoriteToggleButton({super.key, required this.resourceType, required this.resourceId});
+  const FavoriteToggleButton({
+    super.key,
+    required this.resourceType,
+    required this.resourceId,
+    this.light = false,
+  });
 
   final String resourceType;
   final String resourceId;
+  final bool light;
 
   @override
   State<FavoriteToggleButton> createState() => _FavoriteToggleButtonState();
@@ -59,20 +67,27 @@ class _FavoriteToggleButtonState extends State<FavoriteToggleButton> {
         setState(() => _busy = false);
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(failure.message)));
       },
-      (_) => setState(() {
-        _saved = !_saved;
-        _busy = false;
-      }),
+      (_) {
+        AppRefresh.instance.afterFavorite();
+        setState(() {
+          _saved = !_saved;
+          _busy = false;
+        });
+      },
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final icon = Icon(
+      _saved ? Icons.favorite : Icons.favorite_border,
+      color: _saved ? const Color(0xFFE11D48) : (widget.light ? Colors.white : AppTheme.navy),
+    );
     return IconButton(
       tooltip: _saved ? l10n.removeFavorite : l10n.addFavorite,
       onPressed: _busy ? null : _toggle,
-      icon: Icon(_saved ? Icons.favorite : Icons.favorite_border, color: _saved ? Colors.redAccent : null),
+      icon: icon,
     );
   }
 }

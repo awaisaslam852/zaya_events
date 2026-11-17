@@ -1,0 +1,6 @@
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "isSuperAdmin" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "allowedCountries" JSONB NOT NULL DEFAULT '[]';
+
+UPDATE "User"
+SET "isSuperAdmin" = true
+WHERE role = 'ADMIN' AND "deletedAt" IS NULL;

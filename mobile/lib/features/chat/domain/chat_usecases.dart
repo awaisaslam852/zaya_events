@@ -30,10 +30,13 @@ class ChatRepository {
     );
   }
 
-  Future<Either<Failure, Map<String, dynamic>>> start(String participantId) {
+  Future<Either<Failure, Map<String, dynamic>>> start(String participantId, {String? bookingId}) {
     return _client.post(
       '/chat/conversations',
-      data: {'participantId': participantId},
+      data: {
+        'participantId': participantId,
+        if (bookingId != null && bookingId.isNotEmpty) 'bookingId': bookingId,
+      },
       parse: (data) => Map<String, dynamic>.from(data as Map),
     );
   }
@@ -85,7 +88,8 @@ class GetConversation {
 class StartConversation {
   StartConversation(this._repo);
   final ChatRepository _repo;
-  Future<Either<Failure, Map<String, dynamic>>> call(String participantId) => _repo.start(participantId);
+  Future<Either<Failure, Map<String, dynamic>>> call(String participantId, {String? bookingId}) =>
+      _repo.start(participantId, bookingId: bookingId);
 }
 
 class StartSupport {

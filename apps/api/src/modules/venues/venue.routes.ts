@@ -4,7 +4,15 @@ import { requireRole } from '../../middleware/rbac.js';
 import { validate } from '../../middleware/validate.js';
 import { idParamSchema } from '../../lib/common.js';
 import { venueController } from './venue.controller.js';
-import { venueBody, venueInquirySchema, venueListQuery, venuePackageBody, venuePatch } from './venue.schema.js';
+import {
+  venueBody,
+  venueInquirySchema,
+  venueListQuery,
+  venuePackageBody,
+  venuePackageParams,
+  venuePackagePatch,
+  venuePatch,
+} from './venue.schema.js';
 
 export const venuesRouter = Router();
 
@@ -31,6 +39,20 @@ venuesRouter.post(
   requireRole('vendor', 'admin'),
   validate({ params: idParamSchema, body: venuePackageBody }),
   venueController.addPackage,
+);
+venuesRouter.patch(
+  '/:id/packages/:packageId',
+  requireAuth,
+  requireRole('vendor', 'admin'),
+  validate({ params: venuePackageParams, body: venuePackagePatch }),
+  venueController.updatePackage,
+);
+venuesRouter.delete(
+  '/:id/packages/:packageId',
+  requireAuth,
+  requireRole('vendor', 'admin'),
+  validate({ params: venuePackageParams }),
+  venueController.removePackage,
 );
 venuesRouter.post(
   '/:id/inquire',

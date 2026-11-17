@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { api, unwrap, type Paginated } from '@/lib/api';
 import { ListToolbar } from '@/components/ListToolbar';
 import { EmptyHint, Section } from '@/components/AdminChrome';
@@ -19,6 +20,7 @@ type Conversation = {
 type Message = { id: string; body: string; senderId: string; createdAt: string };
 
 export function MessagesPage() {
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const [page, setPage] = useState(1);
   const [q, setQ] = useState('');
@@ -52,10 +54,10 @@ export function MessagesPage() {
 
   return (
     <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
-      <div>
+      <div className={activeId ? 'hidden lg:block' : 'block'}>
         <ListToolbar
-          title="Support inbox"
-          subtitle="Customer and vendor conversations with admin."
+          title={t('nav.messages')}
+          subtitle={t('pages.messages')}
           search={q}
           onSearch={setQ}
           page={page}
@@ -63,7 +65,7 @@ export function MessagesPage() {
           onPage={setPage}
         />
         {items.length === 0 ? (
-          <EmptyHint>No conversations yet</EmptyHint>
+          <EmptyHint>{t('common.noConversations')}</EmptyHint>
         ) : (
           <div className="space-y-2">
             {items.map((row) => {
@@ -84,11 +86,21 @@ export function MessagesPage() {
           </div>
         )}
       </div>
-      <Section title="Thread">
+      <div className={activeId ? 'block' : 'hidden lg:block'}>
+      <Section
+        title={t('common.thread')}
+        action={
+          activeId ? (
+            <Button variant="outline" size="sm" className="lg:hidden" onClick={() => setActiveId(null)}>
+              {t('common.back')}
+            </Button>
+          ) : null
+        }
+      >
         {!activeId ? (
-          <EmptyHint>Select a conversation</EmptyHint>
+          <EmptyHint>{t('common.selectConversation')}</EmptyHint>
         ) : (
-          <div className="flex h-[70vh] flex-col">
+          <div className="flex h-[60vh] flex-col sm:h-[70vh]">
             <div className="flex-1 space-y-2 overflow-y-auto">
               {(thread.data?.items ?? []).slice().reverse().map((msg) => (
                 <div key={msg.id} className="rounded-xl bg-[#f5f7fa] px-3 py-2 text-sm">
@@ -106,12 +118,13 @@ export function MessagesPage() {
                 }
               }}
             >
-              <Input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Reply as admin" />
-              <Button type="submit">Send</Button>
+              <Input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={t('common.replyAsAdmin')} />
+              <Button type="submit" className="shrink-0">{t('common.send')}</Button>
             </form>
           </div>
         )}
       </Section>
+      </div>
     </div>
   );
 }

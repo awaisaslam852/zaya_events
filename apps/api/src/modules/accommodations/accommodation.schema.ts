@@ -4,6 +4,7 @@ import { localizedString, paginationQuerySchema } from '../../lib/common.js';
 
 export const accommodationListQuery = paginationQuerySchema.extend({
   city: z.string().optional(),
+  country: z.string().length(2).optional(),
   type: z.nativeEnum(AccommodationType).optional(),
   minGuests: z.coerce.number().int().optional(),
   vendorId: z.string().uuid().optional(),
@@ -15,7 +16,7 @@ export const accommodationBody = z.object({
   type: z.nativeEnum(AccommodationType),
   address: localizedString,
   city: z.string(),
-  country: z.string(),
+  country: z.string().optional(),
   latitude: z.number().optional(),
   longitude: z.number().optional(),
   maxGuests: z.number().int().positive(),
@@ -24,7 +25,7 @@ export const accommodationBody = z.object({
   nightlyRate: z.number().nonnegative(),
   currency: z.string().length(3).default('AED'),
   amenities: z.array(z.string()).default([]),
-  coverKey: z.string().optional(),
+  coverKey: z.string().nullish(),
   galleryKeys: z.array(z.string()).default([]),
   isPublished: z.boolean().default(true),
 });

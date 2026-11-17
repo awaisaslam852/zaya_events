@@ -64,7 +64,7 @@ export function BookingsPage() {
     <div className="space-y-4">
       <ListToolbar
         title={t('nav.bookings')}
-        subtitle="Confirm, reject, and inspect every reservation — including customer and vendor."
+        subtitle={t('pages.bookings')}
         search={q}
         onSearch={(v) => {
           setQ(v);
@@ -90,7 +90,7 @@ export function BookingsPage() {
           </>
         }
       />
-      <Input placeholder="Reason for confirm / reject (optional)" {...form.register('reason')} />
+      <Input placeholder={t('common.reasonOptional')} {...form.register('reason')} />
       {items.length === 0 ? (
         <EmptyHint>{t('common.empty')}</EmptyHint>
       ) : (
@@ -98,9 +98,9 @@ export function BookingsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Booking</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Vendor</TableHead>
+                <TableHead>{t('nav.bookings')}</TableHead>
+                <TableHead>{t('booking.customer')}</TableHead>
+                <TableHead>{t('booking.vendor')}</TableHead>
                 <TableHead>{t('common.status')}</TableHead>
                 <TableHead>{t('common.price')}</TableHead>
                 <TableHead>{t('common.actions')}</TableHead>

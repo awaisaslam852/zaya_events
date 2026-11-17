@@ -75,7 +75,7 @@ export function BannersPage() {
     <div>
       <ListToolbar
         title={t('nav.banners')}
-        subtitle="Hero and discovery creatives shown in the customer app."
+        subtitle={t('pages.banners')}
         search={q}
         onSearch={setQ}
         page={page}
@@ -111,7 +111,7 @@ export function BannersPage() {
                     {form.watch('imageKey') ? (
                       <img src={mediaUrl(form.watch('imageKey'))} alt="" className="h-28 w-full rounded-md object-cover" />
                     ) : (
-                      <p className="text-xs text-muted-foreground">Choose an image from your computer before saving.</p>
+                      <p className="text-xs text-muted-foreground">{t('common.chooseImage')}</p>
                     )}
                     <Input placeholder="https://" {...form.register('linkUrl')} />
                     <select className="h-10 w-full rounded-md border px-2 text-sm" {...form.register('placement')}>

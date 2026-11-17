@@ -1,16 +1,12 @@
 String localized(dynamic value, String locale) {
   if (value is Map) {
-    final preferred = value[locale];
-    if (preferred is String && preferred.isNotEmpty) {
-      return preferred;
-    }
-    final en = value['en'];
-    final ar = value['ar'];
-    if (en is String && en.isNotEmpty) {
-      return en;
-    }
-    if (ar is String && ar.isNotEmpty) {
-      return ar;
+    final code = locale.split(RegExp('[-_]')).first.toLowerCase();
+    final catalog = code == 'ar' ? 'ar' : 'en';
+    for (final key in [locale, code, catalog, 'en', 'ar']) {
+      final preferred = value[key];
+      if (preferred is String && preferred.isNotEmpty) {
+        return preferred;
+      }
     }
   }
   return value?.toString() ?? '';

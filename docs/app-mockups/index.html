@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Zaya Events — UI gallery</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ivory: #f6f1e8;
+      --ivory-deep: #efe6d8;
+      --cream: #fffaf3;
+      --ink: #1c1410;
+      --muted: #7a6a5c;
+      --gold: #c4a574;
+      --gold-soft: #e8d9be;
+      --merlot: #3b2a24;
+      --line: #e6d9c8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #d9cbb8;
+      color: var(--ink);
+      font-family: "DM Sans", sans-serif;
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 260px 1fr;
+    }
+    aside {
+      background: var(--merlot);
+      color: var(--ivory);
+      padding: 28px 18px;
+      overflow: auto;
+    }
+    aside h1 {
+      font-family: "Cormorant Garamond", serif;
+      font-size: 28px;
+      font-weight: 600;
+      margin: 0 0 6px;
+    }
+    aside p { color: var(--gold-soft); font-size: 12px; line-height: 1.45; margin: 0 0 22px; }
+    .group { font-size: 10px; letter-spacing: 0.14em; color: var(--gold); margin: 16px 0 8px; }
+    aside button {
+      display: block;
+      width: 100%;
+      text-align: left;
+      background: transparent;
+      border: 0;
+      color: var(--ivory);
+      padding: 8px 10px;
+      border-radius: 8px;
+      font: 500 13px/1.3 "DM Sans", sans-serif;
+      cursor: pointer;
+    }
+    aside button.on, aside button:hover { background: rgba(196, 165, 116, 0.2); }
+    main {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 32px 16px 48px;
+      gap: 16px;
+    }
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      color: var(--merlot);
+      font-size: 13px;
+    }
+    .toolbar button {
+      border: 1px solid var(--merlot);
+      background: transparent;
+      padding: 6px 12px;
+      border-radius: 999px;
+      cursor: pointer;
+      font: 600 12px "DM Sans", sans-serif;
+    }
+    .phone {
+      width: 390px;
+      height: 844px;
+      background: var(--ivory);
+      border-radius: 36px;
+      overflow: hidden;
+      box-shadow: 0 30px 80px rgba(59, 42, 36, 0.28);
+      display: flex;
+      flex-direction: column;
+    }
+    .sb { display: flex; justify-content: space-between; padding: 14px 24px 8px; font-size: 12px; font-weight: 600; }
+    .hero { background: var(--merlot); color: var(--cream); padding: 12px 20px 22px; }
+    .hero .k { color: var(--gold); letter-spacing: 0.18em; font-size: 11px; font-weight: 700; }
+    .hero h2 { font-family: "Cormorant Garamond", serif; font-size: 28px; font-weight: 600; margin: 10px 0 6px; }
+    .hero p { color: var(--gold-soft); font-size: 13px; margin: 0; line-height: 1.4; }
+    .hd { padding: 8px 20px 12px; }
+    .hd .k { color: var(--gold); letter-spacing: 0.12em; font-size: 11px; font-weight: 700; }
+    .hd h2 { font-family: "Cormorant Garamond", serif; font-size: 26px; margin: 4px 0 0; font-weight: 600; }
+    .hd p { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
+    .body { padding: 12px 16px 16px; display: flex; flex-direction: column; gap: 12px; flex: 1; overflow: auto; }
+    .card {
+      background: var(--cream);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 12px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    .thumb { width: 64px; height: 64px; border-radius: 12px; background: var(--merlot); flex: none; }
+    .card h3 { margin: 0 0 4px; font-size: 15px; }
+    .card p { margin: 0; font-size: 12px; color: var(--muted); }
+    .meta { color: var(--gold); font-weight: 700; font-size: 12px; margin-top: 4px; }
+    .btn {
+      background: var(--gold);
+      color: var(--merlot);
+      text-align: center;
+      padding: 14px;
+      border-radius: 14px;
+      font-weight: 700;
+      font-size: 14px;
+    }
+    .ghost {
+      border: 1px solid var(--line);
+      text-align: center;
+      padding: 14px;
+      border-radius: 14px;
+      font-weight: 650;
+      font-size: 14px;
+    }
+    .field label { display: block; font-size: 10px; letter-spacing: 0.12em; color: var(--muted); margin-bottom: 6px; font-weight: 700; }
+    .field div {
+      background: var(--cream);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 14px;
+      font-size: 14px;
+    }
+    .tabs {
+      display: flex;
+      background: var(--cream);
+      border-top: 1px solid var(--line);
+      padding: 10px 8px 18px;
+    }
+    .tabs span { flex: 1; text-align: center; font-size: 9px; font-weight: 700; color: var(--muted); }
+    .tabs span.on { color: var(--merlot); }
+    .chips { display: flex; gap: 8px; }
+    .chip { background: var(--cream); border: 1px solid var(--line); border-radius: 999px; padding: 8px 12px; font-size: 12px; font-weight: 650; }
+    .chip.on { background: var(--merlot); color: var(--gold-soft); border-color: var(--merlot); }
+    .note { max-width: 520px; text-align: center; color: var(--merlot); font-size: 13px; line-height: 1.5; }
+    .note code { background: var(--ivory); padding: 1px 6px; border-radius: 4px; }
+    @media (max-width: 800px) {
+      body { grid-template-columns: 1fr; }
+      aside { max-height: 220px; }
+    }
+  </style>
+</head>
+<body>
+  <aside>
+    <h1>Zaya</h1>
+    <p>Luxury events UI. Full editable set lives in the Figma plugin under <code>design/figma-plugin</code>.</p>
+    <div class="group">AUTH</div>
+    <button data-id="login" class="on">Login</button>
+    <button data-id="register">Register</button>
+    <div class="group">CUSTOMER</div>
+    <button data-id="home">Home</button>
+    <button data-id="venues">Venues</button>
+    <button data-id="venue">Venue detail</button>
+    <button data-id="bookings">Bookings</button>
+    <button data-id="chat">Chat</button>
+    <button data-id="profile">Profile</button>
+    <div class="group">VENDOR</div>
+    <button data-id="dash">Dashboard</button>
+    <button data-id="requests">Requests</button>
+    <div class="group">CALLS</div>
+    <button data-id="incoming">Incoming</button>
+    <button data-id="active">Active audio</button>
+  </aside>
+  <main>
+    <div class="toolbar">
+      <button id="prev">Prev</button>
+      <span id="label">Login</span>
+      <button id="next">Next</button>
+    </div>
+    <div class="phone" id="stage"></div>
+    <p class="note">This is a preview of the new look. To polish layers in Figma: Desktop → Plugins → Development → Import plugin from manifest → <code>design/figma-plugin/manifest.json</code> → Generate artboards.</p>
+  </main>
+  <script>
+    const tabsC = `<div class="tabs"><span class="on">Home</span><span>Events</span><span>Chat</span><span>Favorites</span><span>Profile</span></div>`;
+    const tabsV = `<div class="tabs"><span class="on">Dashboard</span><span>Listings</span><span>Requests</span><span>Chat</span><span>Profile</span></div>`;
+    const screens = {
+      login: { title: "Login", html: `
+        <div class="sb"><span>9:41</span><span>5G  100%</span></div>
+        <div class="hero"><div class="k">ZAYA</div><h2>Events, written softly.</h2><p>Venues, cars, stays and honeymoons across the Gulf.</p></div>
+        <div class="body">
+          <div class="field"><label>EMAIL</label><div>amira.uae@zayaevents.com</div></div>
+          <div class="field"><label>PASSWORD</label><div>••••••••••••</div></div>
+          <div class="btn">Sign in</div>
+          <div class="ghost">Create an account</div>
+        </div>` },
+      register: { title: "Register", html: `
+        <div class="sb"><span>9:41</span><span>5G</span></div>
+        <div class="hd"><div class="k">JOIN ZAYA</div><h2>Create account</h2></div>
+        <div class="body">
+          <div class="field"><label>FIRST NAME</label><div>Amira</div></div>
+          <div class="field"><label>EMAIL</label><div>amira.uae@zayaevents.com</div></div>
+          <div class="field"><label>COUNTRY</label><div>United Arab Emirates</div></div>
+          <div class="btn">Continue</div>
+        </div>` },
+      home: { title: "Home", html: `
+        <div class="sb"><span>9:41</span><span>EN | AR</span></div>
+        <div class="hero"><div class="k">ZAYA  ·  AE</div><h2>Plan a gathering that feels like you.</h2><p>Venues, cars, stays and honeymoon stories.</p></div>
+        <div class="body">
+          <div class="field"><div>Search Dubai villas, classic cars…</div></div>
+          <div class="chips"><span class="chip on">Venues</span><span class="chip">Cars</span><span class="chip">Stays</span></div>
+          <div class="card"><div class="thumb"></div><div><h3>Palms Celebration Hall</h3><p>Dubai · 400 guests</p><div class="meta">AED 18,500</div></div></div>
+          <div class="card"><div class="thumb"></div><div><h3>Noor Garden Villa</h3><p>Abu Dhabi · lawn + majlis</p><div class="meta">AED 12,000</div></div></div>
+        </div>${tabsC}` },
+      venues: { title: "Venues", html: `
+        <div class="sb"><span>9:41</span><span>5G</span></div>
+        <div class="hd"><div class="k">HALLS & GARDENS</div><h2>Venues</h2></div>
+        <div class="body">
+          <div class="card"><div class="thumb"></div><div><h3>Palms Celebration Hall</h3><p>Dubai · 400 guests</p><div class="meta">AED 18,500</div></div></div>
+          <div class="card"><div class="thumb"></div><div><h3>Noor Garden Villa</h3><p>Abu Dhabi</p><div class="meta">AED 12,000</div></div></div>
+        </div>${tabsC}` },
+      venue: { title: "Venue detail", html: `
+        <div class="hero" style="min-height:220px"><div class="k">VENUE  ·  DUBAI</div><h2>Palms Celebration Hall</h2><p>Al Barari · 400 guests</p></div>
+        <div class="body">
+          <div class="meta" style="font-size:18px">From AED 18,500</div>
+          <p style="margin:0;color:var(--muted);font-size:13px;line-height:1.45">A palm court, indoor majlis, and a kitchen wing. Built for walimas that move from daylight to lanterns.</p>
+          <div class="btn">Book now</div>
+          <div class="ghost">Inquire</div>
+        </div>` },
+      bookings: { title: "Bookings", html: `
+        <div class="sb"><span>9:41</span><span>5G</span></div>
+        <div class="hd"><div class="k">PLANNING</div><h2>Bookings</h2></div>
+        <div class="body">
+          <div class="card"><div class="thumb"></div><div><h3>ZY-2026-44120</h3><p>Palms · Confirmed</p><div class="meta">AED 18,500</div></div></div>
+          <div class="card"><div class="thumb"></div><div><h3>ZY-2026-44188</h3><p>Rolls Dawn · Pending</p><div class="meta">AED 2,400</div></div></div>
+        </div>` },
+      chat: { title: "Chat", html: `
+        <div class="sb"><span>9:41</span><span>5G</span></div>
+        <div class="hd"><div class="k">CHAT</div><h2>Palms / Layla</h2></div>
+        <div class="body">
+          <div class="card" style="background:var(--ivory-deep)">Can we visit Thursday at 11?</div>
+          <div class="card" style="background:var(--merlot);color:var(--cream)">Yes — I’ll have the majlis ready, and tea.</div>
+        </div>` },
+      profile: { title: "Profile", html: `
+        <div class="sb"><span>9:41</span><span>5G</span></div>
+        <div class="hd"><div class="k">ACCOUNT</div><h2>Amira Hassan</h2></div>
+        <div class="body">
+          <div class="card"><div class="thumb"></div><div><h3>Amira Hassan</h3><p>Customer · UAE</p></div></div>
+          <div class="ghost">Edit profile</div>
+          <div class="ghost">Language · EN | AR</div>
+        </div>${tabsC}` },
+      dash: { title: "Dashboard", html: `
+        <div class="sb"><span>9:41</span><span>EN | AR</span></div>
+        <div class="hero"><div class="k">PARTNER HUB</div><h2>Welcome back, Layla.</h2><p>Palms Celebration Hall · Approved</p></div>
+        <div class="body">
+          <div class="card"><div><h3>AED 64,200</h3><p>Season earnings</p></div></div>
+          <div class="card"><div class="thumb"></div><div><h3>Amira & Yusuf — Walima</h3><p>Awaiting confirmation</p></div></div>
+        </div>${tabsV}` },
+      requests: { title: "Requests", html: `
+        <div class="sb"><span>9:41</span><span>5G</span></div>
+        <div class="hd"><div class="k">INBOX</div><h2>Booking requests</h2></div>
+        <div class="body">
+          <div class="card" style="flex-direction:column;align-items:stretch">
+            <div class="meta">ZY-2026-44120</div>
+            <h3 style="margin:6px 0">Amira Hassan · Walima</h3>
+            <p>18 Apr 2027 · 320 guests</p>
+            <div class="btn">Accept</div>
+            <div class="ghost">Decline</div>
+          </div>
+        </div>${tabsV}` },
+      incoming: { title: "Incoming", html: `
+        <div class="hero" style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;min-height:844px">
+          <div class="thumb" style="width:96px;height:96px;border-radius:50%;background:var(--gold)"></div>
+          <h2>Palms / Layla</h2>
+          <p>Incoming voice call</p>
+          <div style="display:flex;gap:48px;margin-top:48px">
+            <div><div class="thumb" style="background:#9b3d3d;border-radius:50"></div><p>Decline</p></div>
+            <div><div class="thumb" style="background:#3d6b4f;border-radius:50"></div><p>Accept</p></div>
+          </div>
+        </div>` },
+      active: { title: "Active audio", html: `
+        <div class="hero" style="flex:1;min-height:844px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center">
+          <div class="k">VOICE</div>
+          <div class="thumb" style="width:88px;height:88px;border-radius:50%;background:var(--gold);margin:16px"></div>
+          <h2>Layla Al Farsi</h2>
+          <p>03:42</p>
+          <div style="display:flex;gap:28px;margin-top:40px;font-size:12px">
+            <span>Mute</span><span>Speaker</span><span>End</span>
+          </div>
+        </div>` },
+    };
+    const order = Object.keys(screens);
+    let i = 0;
+    const stage = document.getElementById("stage");
+    const label = document.getElementById("label");
+    function show(id) {
+      i = order.indexOf(id);
+      stage.innerHTML = screens[id].html;
+      label.textContent = screens[id].title;
+      document.querySelectorAll("aside button").forEach((b) => b.classList.toggle("on", b.dataset.id === id));
+    }
+    document.querySelector("aside").addEventListener("click", (e) => {
+      const id = e.target.dataset && e.target.dataset.id;
+      if (id) show(id);
+    });
+    document.getElementById("prev").onclick = () => show(order[(i + order.length - 1) % order.length]);
+    document.getElementById("next").onclick = () => show(order[(i + 1) % order.length]);
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowRight") document.getElementById("next").click();
+      if (e.key === "ArrowLeft") document.getElementById("prev").click();
+    });
+    show("login");
+  </script>
+</body>
+</html>

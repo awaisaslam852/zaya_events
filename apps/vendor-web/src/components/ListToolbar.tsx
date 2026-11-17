@@ -19,7 +19,7 @@ export function ListToolbar({ title, subtitle, search, onSearch, page, pageCount
   return (
     <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
       <div>
-        <h1 className="text-3xl font-extrabold tracking-tight text-[#003580]">{title}</h1>
+        <h1 className="text-2xl font-extrabold tracking-tight text-[#003580] sm:text-3xl">{title}</h1>
         <p className="text-sm text-muted-foreground">
           {subtitle ?? 'Keep your live inventory in sync with the guest app.'}
         </p>
@@ -30,7 +30,7 @@ export function ListToolbar({ title, subtitle, search, onSearch, page, pageCount
           value={search}
           placeholder={t('common.search')}
           onChange={(e) => onSearch(e.target.value)}
-          className="w-56"
+          className="min-w-0 w-full sm:w-56"
         />
         <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => onPage(page - 1)}>
           {t('common.prev')}

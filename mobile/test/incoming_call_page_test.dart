@@ -10,7 +10,7 @@ void main() {
       testApp(child: const IncomingCallPage(call: CallEntity(id: 'call-1', status: 'RINGING'))),
     );
 
-    expect(find.text('Incoming call'), findsOneWidget);
+    expect(find.text('Incoming call'), findsWidgets);
     expect(find.text('Accept'), findsOneWidget);
     expect(find.text('Reject'), findsOneWidget);
   });

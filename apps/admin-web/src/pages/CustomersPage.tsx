@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { api, unwrap, type Paginated } from '@/lib/api';
-import { COUNTRIES } from '@/lib/countries';
+import { assignableCountries, defaultCountry } from '@/lib/countries';
 import { ListToolbar } from '@/components/ListToolbar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -50,7 +50,7 @@ export function CustomersPage() {
   const [open, setOpen] = useState(false);
   const form = useForm<CreateForm>({
     resolver: zodResolver(createSchema),
-    defaultValues: { firstName: '', lastName: '', email: '', password: '', phone: '', country: 'AE', locale: 'en' },
+    defaultValues: { firstName: '', lastName: '', email: '', password: '', phone: '', country: defaultCountry(), locale: 'en' },
   });
   const list = useQuery({
     queryKey: ['customers', page, q, status],
@@ -69,7 +69,7 @@ export function CustomersPage() {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['customers'] });
       setOpen(false);
-      form.reset({ firstName: '', lastName: '', email: '', password: '', phone: '', country: 'AE', locale: 'en' });
+      form.reset({ firstName: '', lastName: '', email: '', password: '', phone: '', country: defaultCountry(), locale: 'en' });
       toast.success(t('common.create'));
     },
     onError: (e: Error) => toast.error(e.message),
@@ -80,7 +80,7 @@ export function CustomersPage() {
     <div>
       <ListToolbar
         title={t('nav.customers')}
-        subtitle="Every guest account, their bookings, and access control."
+        subtitle={t('pages.customers')}
         search={q}
         onSearch={(v) => {
           setQ(v);
@@ -133,7 +133,7 @@ export function CustomersPage() {
                     </Field>
                     <Field label={t('common.country')}>
                       <select className="h-10 w-full rounded-md border px-2 text-sm" {...form.register('country')}>
-                        {COUNTRIES.map((row) => (
+                        {assignableCountries().map((row) => (
                           <option key={row.code} value={row.code}>
                             {row.name}
                           </option>

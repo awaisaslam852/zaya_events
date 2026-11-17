@@ -10,7 +10,10 @@ export const paymentRepository = {
     ]);
   },
   findById(id: string) {
-    return prisma.payment.findFirst({ where: { id, ...notDeleted }, include: { booking: true, invoice: true } });
+    return prisma.payment.findFirst({
+      where: { id, ...notDeleted },
+      include: { booking: { include: { vendor: true } }, invoice: true },
+    });
   },
   findByProviderRef(providerRef: string) {
     return prisma.payment.findFirst({ where: { providerRef, ...notDeleted } });

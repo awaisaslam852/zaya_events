@@ -62,7 +62,7 @@ export function VenueVisitsPage() {
     <div className="space-y-4">
       <ListToolbar
         title={t('nav.visits')}
-        subtitle="Approve, reschedule, and assign venue walkthroughs."
+        subtitle={t('pages.visits')}
         search={q}
         onSearch={(v) => {
           setQ(v);

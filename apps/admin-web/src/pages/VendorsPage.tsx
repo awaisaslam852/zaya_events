@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { api, unwrap, type Paginated } from '@/lib/api';
-import { COUNTRIES } from '@/lib/countries';
+import { assignableCountries, defaultCountry } from '@/lib/countries';
 import { coverOf, loc } from '@/lib/utils';
 import { ListToolbar } from '@/components/ListToolbar';
 import { LocalizedFields } from '@/components/LocalizedFields';
@@ -33,16 +33,14 @@ type Vendor = {
 
 const locSchema = z.object({ en: z.string().min(1), ar: z.string().min(1) });
 const createSchema = z.object({
-  firstName: z.string().min(1),
-  lastName: z.string().min(1),
+  firstName: z.string().min(1, 'Required'),
+  lastName: z.string().min(1, 'Required'),
   email: z.string().email(),
-  password: z.string().min(8),
-  phone: z.string().min(8),
+  password: z.string().min(8, 'At least 8 characters'),
+  phone: z.string().min(8, 'At least 8 digits'),
   country: z.string().min(2),
-  city: z.string().min(1),
-  legalName: z.string().min(1),
-  taxId: z.string().optional(),
-  website: z.string().optional(),
+  city: z.string().min(1, 'Required'),
+  legalName: z.string().optional(),
   businessName: locSchema,
 });
 type CreateForm = z.infer<typeof createSchema>;
@@ -62,11 +60,9 @@ export function VendorsPage() {
       email: '',
       password: '',
       phone: '',
-      country: 'AE',
+      country: defaultCountry(),
       city: '',
       legalName: '',
-      taxId: '',
-      website: '',
       businessName: { en: '', ar: '' },
     },
   });
@@ -84,9 +80,15 @@ export function VendorsPage() {
     mutationFn: (values: CreateForm) =>
       unwrap(
         api.post('/api/v1/vendors', {
-          ...values,
-          taxId: values.taxId?.trim() || undefined,
-          website: values.website?.trim() || undefined,
+          firstName: values.firstName.trim(),
+          lastName: values.lastName.trim(),
+          email: values.email.trim(),
+          password: values.password,
+          phone: values.phone.trim(),
+          country: values.country,
+          city: values.city.trim(),
+          legalName: values.legalName?.trim() || values.businessName.en,
+          businessName: values.businessName,
         }),
       ),
     onSuccess: () => {
@@ -103,7 +105,7 @@ export function VendorsPage() {
     <div>
       <ListToolbar
         title={t('nav.vendors')}
-        subtitle="Approve partners and inspect listings, cars, venues, and bookings."
+        subtitle={t('pages.vendors')}
         search={q}
         onSearch={(v) => {
           setQ(v);
@@ -131,53 +133,56 @@ export function VendorsPage() {
             </select>
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
-                <Button>{t('common.create')}</Button>
+                <Button type="button">{t('common.create')}</Button>
               </DialogTrigger>
               <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>{t('common.createVendor')}</DialogTitle>
                 </DialogHeader>
                 <FormProvider {...form}>
-                  <form className="space-y-3" onSubmit={form.handleSubmit((v) => create.mutate(v))}>
+                  <form
+                    className="space-y-3"
+                    onSubmit={form.handleSubmit(
+                      (v) => create.mutate(v),
+                      () => toast.error('Please fill the required fields'),
+                    )}
+                  >
                     <div className="grid gap-3 md:grid-cols-2">
-                      <Field label={t('common.firstName')}>
+                      <Field label={t('common.firstName')} error={form.formState.errors.firstName?.message}>
                         <Input {...form.register('firstName')} />
                       </Field>
-                      <Field label={t('common.lastName')}>
+                      <Field label={t('common.lastName')} error={form.formState.errors.lastName?.message}>
                         <Input {...form.register('lastName')} />
                       </Field>
-                      <Field label={t('auth.email')}>
+                      <Field label={t('auth.email')} error={form.formState.errors.email?.message}>
                         <Input type="email" {...form.register('email')} />
                       </Field>
-                      <Field label={t('auth.password')}>
+                      <Field label={t('auth.password')} error={form.formState.errors.password?.message}>
                         <Input type="password" {...form.register('password')} />
                       </Field>
-                      <Field label={t('common.phone')}>
+                      <Field label={t('common.phone')} error={form.formState.errors.phone?.message}>
                         <Input {...form.register('phone')} />
                       </Field>
                       <Field label={t('common.country')}>
                         <select className="h-10 w-full rounded-md border px-2 text-sm" {...form.register('country')}>
-                          {COUNTRIES.map((row) => (
+                          {assignableCountries().map((row) => (
                             <option key={row.code} value={row.code}>
                               {row.name}
                             </option>
                           ))}
                         </select>
                       </Field>
-                      <Field label={t('common.city')}>
+                      <Field label={t('common.city')} error={form.formState.errors.city?.message}>
                         <Input {...form.register('city')} />
                       </Field>
                       <Field label={t('common.legalName')}>
-                        <Input {...form.register('legalName')} />
-                      </Field>
-                      <Field label={t('common.taxId')}>
-                        <Input {...form.register('taxId')} />
-                      </Field>
-                      <Field label={t('common.website')}>
-                        <Input {...form.register('website')} />
+                        <Input {...form.register('legalName')} placeholder={t('common.optional')} />
                       </Field>
                     </div>
                     <LocalizedFields name="businessName" />
+                    {form.formState.errors.businessName ? (
+                      <p className="text-xs text-destructive">{t('common.businessNameRequired')}</p>
+                    ) : null}
                     <Button type="submit" disabled={create.isPending}>
                       {t('common.save')}
                     </Button>
@@ -241,11 +246,12 @@ export function VendorsPage() {
   );
 }
 
-function Field({ label, children }: { label: string; children: ReactNode }) {
+function Field({ label, error, children }: { label: string; error?: string; children: ReactNode }) {
   return (
     <div className="space-y-1">
       <Label>{label}</Label>
       {children}
+      {error ? <p className="text-xs text-destructive">{error}</p> : null}
     </div>
   );
 }

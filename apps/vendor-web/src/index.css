@@ -37,6 +37,7 @@
   body,
   #root {
     min-height: 100%;
+    overflow-x: hidden;
   }
   body {
     @apply bg-background text-foreground antialiased;

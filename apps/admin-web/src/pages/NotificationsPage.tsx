@@ -49,7 +49,7 @@ export function NotificationsPage() {
 
   return (
     <div className="space-y-6">
-      <ListToolbar title={t('nav.notifications')} subtitle="Broadcast to customers or vendors and review history." search={q} onSearch={setQ} page={page} pageCount={history.data?.pageCount ?? 1} onPage={setPage} />
+      <ListToolbar title={t('nav.notifications')} subtitle={t('pages.notifications')} search={q} onSearch={setQ} page={page} pageCount={history.data?.pageCount ?? 1} onPage={setPage} />
       <FormProvider {...form}>
         <form className="max-w-2xl space-y-3 rounded-2xl border bg-white p-5 shadow-sm" onSubmit={form.handleSubmit((v) => send.mutate(v))}>
           <h2 className="font-semibold">{t('notifications.broadcast')}</h2>

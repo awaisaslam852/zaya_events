@@ -1,5 +1,6 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:zaya_events/core/bloc/safe_cubit.dart';
+import '../../../../core/sync/app_refresh.dart';
 import '../../domain/listings_usecases.dart';
 
 part 'listings_cubit.freezed.dart';
@@ -14,7 +15,7 @@ abstract class ListingsState with _$ListingsState {
   }) = _ListingsState;
 }
 
-class ListingsCubit extends Cubit<ListingsState> {
+class ListingsCubit extends SafeCubit<ListingsState> {
   ListingsCubit(this._list, this._get, this._create, this._update, this._delete) : super(const ListingsState());
 
   final ListVendorListings _list;
@@ -23,9 +24,9 @@ class ListingsCubit extends Cubit<ListingsState> {
   final UpdateListing _update;
   final DeleteListing _delete;
 
-  Future<void> load() async {
+  Future<void> load({Map<String, dynamic>? query}) async {
     emit(state.copyWith(loading: true, error: null));
-    final result = await _list();
+    final result = await _list(query: query);
     result.fold(
       (f) => emit(state.copyWith(loading: false, error: f.message)),
       (page) => emit(state.copyWith(loading: false, items: page.items)),
@@ -47,7 +48,10 @@ class ListingsCubit extends Cubit<ListingsState> {
     return result.fold((f) {
       emit(state.copyWith(error: f.message));
       return f.message;
-    }, (_) => null);
+    }, (_) {
+      AppRefresh.instance.afterVendorCatalog();
+      return null;
+    });
   }
 
   Future<void> create(Map<String, dynamic> body) async {
@@ -62,6 +66,7 @@ class ListingsCubit extends Cubit<ListingsState> {
 
   Future<void> remove(String id) async {
     await _delete(id);
+    AppRefresh.instance.afterVendorCatalog();
     await load();
   }
 }

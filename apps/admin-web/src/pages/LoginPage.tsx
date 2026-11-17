@@ -4,10 +4,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { api, unwrap } from '@/lib/api';
-import { setSession } from '@/lib/auth';
+import { setSession, type AdminSessionUser } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { LanguageSwitch } from '@/components/LanguageSwitch';
 import { toast } from 'sonner';
 
 const schema = z.object({
@@ -28,7 +29,7 @@ export function LoginPage() {
   async function onSubmit(values: Form): Promise<void> {
     try {
       const data = await unwrap<{
-        user: { id: string; email: string; role: string; firstName: string; lastName: string };
+        user: AdminSessionUser;
         tokens: { accessToken: string; refreshToken: string };
       }>(api.post('/api/v1/auth/login', values));
       if (data.user.role !== 'ADMIN') {
@@ -45,19 +46,18 @@ export function LoginPage() {
   return (
     <div className="grid min-h-screen lg:grid-cols-2" dir={i18n.language.startsWith('ar') ? 'rtl' : 'ltr'}>
       <div className="brand-hero relative hidden flex-col justify-between p-10 text-white lg:flex">
-        <p className="text-sm font-semibold uppercase tracking-[0.25em] text-[#FEBB02]">Zaya Events</p>
+        <img src="/logo.png" alt="Zaya Events" className="h-16 w-auto" />
         <div className="max-w-lg space-y-4">
-          <h1 className="text-4xl font-extrabold leading-tight">Find, book, and run every celebration from one desk.</h1>
-          <p className="text-white/80">
-            Venues, vendors, cars, stays, and honeymoons — with live bookings, payouts, and partner quality controls.
-          </p>
+          <h1 className="text-4xl font-extrabold leading-tight">{t('auth.heroTitle')}</h1>
+          <p className="text-white/80">{t('auth.heroBody')}</p>
         </div>
-        <p className="text-sm text-white/70">Demo: admin@zayaevents.com</p>
+        <p className="text-sm text-white/70">{t('auth.demo')}</p>
       </div>
-      <div className="flex items-center justify-center bg-[#f5f7fa] p-6">
-        <form className="w-full max-w-md space-y-5 rounded-2xl border bg-white p-8 shadow-xl shadow-blue-900/5" onSubmit={form.handleSubmit((v) => void onSubmit(v))}>
+      <div className="flex items-center justify-center bg-[#f5f7fa] p-4 sm:p-6">
+        <form className="w-full max-w-md space-y-5 rounded-2xl border bg-white p-5 shadow-xl shadow-blue-900/5 sm:p-8" onSubmit={form.handleSubmit((v) => void onSubmit(v))}>
           <div>
-            <p className="text-xs font-bold uppercase tracking-widest text-[#0071c2]">Admin</p>
+            <img src="/mark.png" alt="Zaya Events" className="mb-3 h-12 w-12 rounded-xl object-cover" />
+            <p className="text-xs font-bold uppercase tracking-widest text-[#0071c2]">{t('auth.admin')}</p>
             <h2 className="mt-1 text-2xl font-extrabold">{t('app.name')}</h2>
             <p className="mt-1 text-sm text-muted-foreground">{t('auth.adminOnly')}</p>
           </div>
@@ -72,9 +72,9 @@ export function LoginPage() {
           <Button className="h-11 w-full" variant="cta" type="submit" disabled={form.formState.isSubmitting}>
             {t('auth.login')}
           </Button>
-          <Button type="button" variant="ghost" className="w-full" onClick={() => void i18n.changeLanguage(i18n.language.startsWith('ar') ? 'en' : 'ar')}>
-            {i18n.language.startsWith('ar') ? 'English' : 'العربية'}
-          </Button>
+          <div className="flex justify-center">
+            <LanguageSwitch />
+          </div>
         </form>
       </div>
     </div>

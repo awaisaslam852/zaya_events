@@ -1,8 +1,8 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:zaya_events/core/bloc/safe_cubit.dart';
 import '../../domain/usecases/cars_usecases.dart';
 import 'cars_state.dart';
 
-class CarsCubit extends Cubit<CarsState> {
+class CarsCubit extends SafeCubit<CarsState> {
   CarsCubit(this._list, this._get) : super(const CarsState());
 
   final ListCars _list;

@@ -74,11 +74,11 @@ export function CrmPage() {
 
   return (
     <div className="space-y-4">
-      <ListToolbar title={t('nav.crm')} subtitle="Notes and follow-ups against customers, vendors, and bookings." search={q} onSearch={setQ} page={page} pageCount={1} onPage={setPage} />
+      <ListToolbar title={t('nav.crm')} subtitle={t('pages.crm')} search={q} onSearch={setQ} page={page} pageCount={1} onPage={setPage} />
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Record</CardTitle>
+            <CardTitle>{t('common.record')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             <form className="grid gap-2" onSubmit={subject.handleSubmit(() => undefined)}>
@@ -129,7 +129,7 @@ export function CrmPage() {
       </div>
       <Card>
         <CardHeader>
-          <CardTitle>Timeline</CardTitle>
+          <CardTitle>{t('common.timeline')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 text-sm">
           {(timeline.data?.activity ?? []).map((row) => (

@@ -4,7 +4,7 @@ import { validate } from '../../middleware/validate.js';
 import { idParamSchema } from '../../lib/common.js';
 import { notificationController } from './notification.controller.js';
 import { notificationListQuery, registerDeviceSchema, broadcastSchema } from './notification.schema.js';
-import { requireRole } from '../../middleware/rbac.js';
+import { requireRole, requireSuperAdmin } from '../../middleware/rbac.js';
 import { paginationQuerySchema } from '../../lib/common.js';
 
 export const notificationsRouter = Router();
@@ -28,6 +28,7 @@ notificationsRouter.post(
   '/broadcast',
   requireAuth,
   requireRole('admin'),
+  requireSuperAdmin,
   validate({ body: broadcastSchema }),
   notificationController.broadcast,
 );

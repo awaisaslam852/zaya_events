@@ -1,64 +1,64 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class TokenStorage {
-  TokenStorage(FlutterSecureStorage storage) : _secure = storage, _memory = null;
+  TokenStorage(FlutterSecureStorage storage) : _secure = storage;
 
   /// In-memory tokens for widget tests (no platform channel).
-  TokenStorage.memory() : _secure = null, _memory = {};
+  TokenStorage.memory() : _secure = null;
 
   static const _access = 'access_token';
   static const _refresh = 'refresh_token';
 
   final FlutterSecureStorage? _secure;
-  final Map<String, String>? _memory;
+  final Map<String, String> _memory = {};
 
   Future<void> save({required String access, required String refresh}) async {
-    final mem = _memory;
-    if (mem != null) {
-      mem[_access] = access;
-      mem[_refresh] = refresh;
+    _memory[_access] = access;
+    _memory[_refresh] = refresh;
+    final secure = _secure;
+    if (secure == null) {
       return;
     }
     try {
-      await _secure!.write(key: _access, value: access);
-      await _secure.write(key: _refresh, value: refresh);
+      await secure.write(key: _access, value: access);
+      await secure.write(key: _refresh, value: refresh);
     } catch (_) {}
   }
 
-  Future<String?> readAccess() async {
-    final mem = _memory;
-    if (mem != null) {
-      return mem[_access];
+  Future<String?> readAccess() => _read(_access);
+
+  Future<String?> readRefresh() => _read(_refresh);
+
+  Future<String?> _read(String key) async {
+    final cached = _memory[key];
+    if (cached != null && cached.isNotEmpty) {
+      return cached;
     }
-    try {
-      return await _secure!.read(key: _access);
-    } catch (_) {
+    final secure = _secure;
+    if (secure == null) {
       return null;
     }
-  }
-
-  Future<String?> readRefresh() async {
-    final mem = _memory;
-    if (mem != null) {
-      return mem[_refresh];
-    }
     try {
-      return await _secure!.read(key: _refresh);
+      final value = await secure.read(key: key);
+      if (value != null && value.isNotEmpty) {
+        _memory[key] = value;
+      }
+      return value;
     } catch (_) {
       return null;
     }
   }
 
   Future<void> clear() async {
-    final mem = _memory;
-    if (mem != null) {
-      mem.remove(_access);
-      mem.remove(_refresh);
+    _memory.remove(_access);
+    _memory.remove(_refresh);
+    final secure = _secure;
+    if (secure == null) {
       return;
     }
     try {
-      await _secure!.delete(key: _access);
-      await _secure!.delete(key: _refresh);
+      await secure.delete(key: _access);
+      await secure.delete(key: _refresh);
     } catch (_) {}
   }
 }

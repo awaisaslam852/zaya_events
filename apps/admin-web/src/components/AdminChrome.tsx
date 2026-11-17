@@ -1,6 +1,8 @@
-import type { ReactNode } from 'react';
+import type { ReactNode, SelectHTMLAttributes } from 'react';
 import { Link } from 'react-router-dom';
-import { coverOf, initials } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
+import { cn, coverOf, initials } from '@/lib/utils';
+import { Label } from '@/components/ui/label';
 import { StatusBadge } from '@/components/StatusBadge';
 
 export function TableShell({ children }: { children: ReactNode }) {
@@ -15,7 +17,7 @@ export function StatTile({ label, value, hint }: { label: string; value: string;
   return (
     <div className="rounded-2xl border bg-white p-4 shadow-sm shadow-blue-900/5">
       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className="mt-1 text-2xl font-extrabold text-[#003580]">{value}</p>
+      <p className="mt-1 break-words text-xl font-extrabold text-[#003580] sm:text-2xl">{value}</p>
       {hint ? <p className="mt-1 text-xs text-muted-foreground">{hint}</p> : null}
     </div>
   );
@@ -24,7 +26,7 @@ export function StatTile({ label, value, hint }: { label: string; value: string;
 export function Section({ title, action, children }: { title: string; action?: ReactNode; children: ReactNode }) {
   return (
     <section className="rounded-2xl border bg-white p-5 shadow-sm shadow-blue-900/5">
-      <div className="mb-4 flex items-center justify-between gap-3">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-base font-extrabold text-[#003580]">{title}</h2>
         {action}
       </div>
@@ -34,9 +36,10 @@ export function Section({ title, action, children }: { title: string; action?: R
 }
 
 export function GalleryStrip({ items }: { items: Array<{ coverKey?: string | null; galleryKeys?: unknown }> }) {
+  const { t } = useTranslation();
   const urls = items.map((item) => coverOf(item)).filter(Boolean);
   if (urls.length === 0) {
-    return <EmptyHint>No photos yet</EmptyHint>;
+    return <EmptyHint>{t('common.noPhotos')}</EmptyHint>;
   }
   return (
     <div className="flex gap-2 overflow-x-auto pb-1">
@@ -49,12 +52,27 @@ export function GalleryStrip({ items }: { items: Array<{ coverKey?: string | nul
   );
 }
 
-export function PersonAvatar({ first, last, src }: { first?: string | null; last?: string | null; src?: string | null }) {
+export function PersonAvatar({
+  first,
+  last,
+  src,
+  className,
+}: {
+  first?: string | null;
+  last?: string | null;
+  src?: string | null;
+  className?: string;
+}) {
   if (src) {
-    return <img src={src} alt="" className="h-12 w-12 rounded-full object-cover" />;
+    return <img src={src} alt="" className={cn('h-12 w-12 rounded-full object-cover', className)} />;
   }
   return (
-    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#003580] text-sm font-extrabold text-white">
+    <div
+      className={cn(
+        'flex h-12 w-12 items-center justify-center rounded-full bg-[#003580] text-sm font-extrabold text-white',
+        className,
+      )}
+    >
       {initials(first, last)}
     </div>
   );
@@ -110,6 +128,40 @@ export function PhotoCard({
     </article>
   );
   return to ? <Link to={to}>{body}</Link> : body;
+}
+
+export function FormSection({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
+  return (
+    <section className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+      <div>
+        <h3 className="text-sm font-extrabold text-[#003580]">{title}</h3>
+        {hint ? <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{hint}</p> : null}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+export function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
+  return (
+    <div className="space-y-1.5">
+      <Label>{label}</Label>
+      {children}
+      {hint ? <p className="text-xs leading-relaxed text-muted-foreground">{hint}</p> : null}
+    </div>
+  );
+}
+
+export function NativeSelect({ className, ...props }: SelectHTMLAttributes<HTMLSelectElement>) {
+  return (
+    <select
+      className={cn(
+        'flex h-10 w-full rounded-md border border-input bg-white px-3 text-sm outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring',
+        className,
+      )}
+      {...props}
+    />
+  );
 }
 
 export function FactGrid({ items }: { items: Array<{ label: string; value: ReactNode }> }) {

@@ -23,8 +23,9 @@ void main() {
     );
 
     expect(find.text('Sign in'), findsWidgets);
-    await tester.enterText(find.byType(TextField).at(1), 'guest@zaya.local');
-    await tester.enterText(find.byType(TextField).at(2), 'secret123');
+    expect(find.text('Try a demo account'), findsNothing);
+    await tester.enterText(find.byType(TextField).first, 'guest@zaya.local');
+    await tester.enterText(find.byType(TextField).at(1), 'secret123');
     await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
     await tester.pump();
 

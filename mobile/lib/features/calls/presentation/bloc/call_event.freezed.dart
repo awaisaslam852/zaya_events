@@ -55,7 +55,7 @@ extension CallEventPatterns on CallEvent {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( _Started value)?  started,TResult Function( _IncomingFromPush value)?  incomingFromPush,TResult Function( _Outgoing value)?  outgoing,TResult Function( _Accept value)?  accept,TResult Function( _Reject value)?  reject,TResult Function( _End value)?  end,TResult Function( _LoadHistory value)?  loadHistory,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( _Started value)?  started,TResult Function( _IncomingFromPush value)?  incomingFromPush,TResult Function( _Outgoing value)?  outgoing,TResult Function( _Accept value)?  accept,TResult Function( _Reject value)?  reject,TResult Function( _End value)?  end,TResult Function( _PeerAccepted value)?  peerAccepted,TResult Function( _Cleared value)?  cleared,TResult Function( _LoadHistory value)?  loadHistory,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case _Started() when started != null:
@@ -64,7 +64,9 @@ return incomingFromPush(_that);case _Outgoing() when outgoing != null:
 return outgoing(_that);case _Accept() when accept != null:
 return accept(_that);case _Reject() when reject != null:
 return reject(_that);case _End() when end != null:
-return end(_that);case _LoadHistory() when loadHistory != null:
+return end(_that);case _PeerAccepted() when peerAccepted != null:
+return peerAccepted(_that);case _Cleared() when cleared != null:
+return cleared(_that);case _LoadHistory() when loadHistory != null:
 return loadHistory(_that);case _:
   return orElse();
 
@@ -83,7 +85,7 @@ return loadHistory(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( _Started value)  started,required TResult Function( _IncomingFromPush value)  incomingFromPush,required TResult Function( _Outgoing value)  outgoing,required TResult Function( _Accept value)  accept,required TResult Function( _Reject value)  reject,required TResult Function( _End value)  end,required TResult Function( _LoadHistory value)  loadHistory,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( _Started value)  started,required TResult Function( _IncomingFromPush value)  incomingFromPush,required TResult Function( _Outgoing value)  outgoing,required TResult Function( _Accept value)  accept,required TResult Function( _Reject value)  reject,required TResult Function( _End value)  end,required TResult Function( _PeerAccepted value)  peerAccepted,required TResult Function( _Cleared value)  cleared,required TResult Function( _LoadHistory value)  loadHistory,}){
 final _that = this;
 switch (_that) {
 case _Started():
@@ -92,7 +94,9 @@ return incomingFromPush(_that);case _Outgoing():
 return outgoing(_that);case _Accept():
 return accept(_that);case _Reject():
 return reject(_that);case _End():
-return end(_that);case _LoadHistory():
+return end(_that);case _PeerAccepted():
+return peerAccepted(_that);case _Cleared():
+return cleared(_that);case _LoadHistory():
 return loadHistory(_that);case _:
   throw StateError('Unexpected subclass');
 
@@ -110,7 +114,7 @@ return loadHistory(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( _Started value)?  started,TResult? Function( _IncomingFromPush value)?  incomingFromPush,TResult? Function( _Outgoing value)?  outgoing,TResult? Function( _Accept value)?  accept,TResult? Function( _Reject value)?  reject,TResult? Function( _End value)?  end,TResult? Function( _LoadHistory value)?  loadHistory,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( _Started value)?  started,TResult? Function( _IncomingFromPush value)?  incomingFromPush,TResult? Function( _Outgoing value)?  outgoing,TResult? Function( _Accept value)?  accept,TResult? Function( _Reject value)?  reject,TResult? Function( _End value)?  end,TResult? Function( _PeerAccepted value)?  peerAccepted,TResult? Function( _Cleared value)?  cleared,TResult? Function( _LoadHistory value)?  loadHistory,}){
 final _that = this;
 switch (_that) {
 case _Started() when started != null:
@@ -119,7 +123,9 @@ return incomingFromPush(_that);case _Outgoing() when outgoing != null:
 return outgoing(_that);case _Accept() when accept != null:
 return accept(_that);case _Reject() when reject != null:
 return reject(_that);case _End() when end != null:
-return end(_that);case _LoadHistory() when loadHistory != null:
+return end(_that);case _PeerAccepted() when peerAccepted != null:
+return peerAccepted(_that);case _Cleared() when cleared != null:
+return cleared(_that);case _LoadHistory() when loadHistory != null:
 return loadHistory(_that);case _:
   return null;
 
@@ -137,7 +143,7 @@ return loadHistory(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  started,TResult Function( Map<String, dynamic> payload)?  incomingFromPush,TResult Function( String calleeId,  String? bookingId)?  outgoing,TResult Function( String id)?  accept,TResult Function( String id)?  reject,TResult Function( String id)?  end,TResult Function()?  loadHistory,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  started,TResult Function( Map<String, dynamic> payload)?  incomingFromPush,TResult Function( String calleeId,  String? bookingId)?  outgoing,TResult Function( String id)?  accept,TResult Function( String id)?  reject,TResult Function( String id)?  end,TResult Function( String id)?  peerAccepted,TResult Function()?  cleared,TResult Function()?  loadHistory,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Started() when started != null:
 return started();case _IncomingFromPush() when incomingFromPush != null:
@@ -145,7 +151,9 @@ return incomingFromPush(_that.payload);case _Outgoing() when outgoing != null:
 return outgoing(_that.calleeId,_that.bookingId);case _Accept() when accept != null:
 return accept(_that.id);case _Reject() when reject != null:
 return reject(_that.id);case _End() when end != null:
-return end(_that.id);case _LoadHistory() when loadHistory != null:
+return end(_that.id);case _PeerAccepted() when peerAccepted != null:
+return peerAccepted(_that.id);case _Cleared() when cleared != null:
+return cleared();case _LoadHistory() when loadHistory != null:
 return loadHistory();case _:
   return orElse();
 
@@ -164,7 +172,7 @@ return loadHistory();case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  started,required TResult Function( Map<String, dynamic> payload)  incomingFromPush,required TResult Function( String calleeId,  String? bookingId)  outgoing,required TResult Function( String id)  accept,required TResult Function( String id)  reject,required TResult Function( String id)  end,required TResult Function()  loadHistory,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  started,required TResult Function( Map<String, dynamic> payload)  incomingFromPush,required TResult Function( String calleeId,  String? bookingId)  outgoing,required TResult Function( String id)  accept,required TResult Function( String id)  reject,required TResult Function( String id)  end,required TResult Function( String id)  peerAccepted,required TResult Function()  cleared,required TResult Function()  loadHistory,}) {final _that = this;
 switch (_that) {
 case _Started():
 return started();case _IncomingFromPush():
@@ -172,7 +180,9 @@ return incomingFromPush(_that.payload);case _Outgoing():
 return outgoing(_that.calleeId,_that.bookingId);case _Accept():
 return accept(_that.id);case _Reject():
 return reject(_that.id);case _End():
-return end(_that.id);case _LoadHistory():
+return end(_that.id);case _PeerAccepted():
+return peerAccepted(_that.id);case _Cleared():
+return cleared();case _LoadHistory():
 return loadHistory();case _:
   throw StateError('Unexpected subclass');
 
@@ -190,7 +200,7 @@ return loadHistory();case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  started,TResult? Function( Map<String, dynamic> payload)?  incomingFromPush,TResult? Function( String calleeId,  String? bookingId)?  outgoing,TResult? Function( String id)?  accept,TResult? Function( String id)?  reject,TResult? Function( String id)?  end,TResult? Function()?  loadHistory,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  started,TResult? Function( Map<String, dynamic> payload)?  incomingFromPush,TResult? Function( String calleeId,  String? bookingId)?  outgoing,TResult? Function( String id)?  accept,TResult? Function( String id)?  reject,TResult? Function( String id)?  end,TResult? Function( String id)?  peerAccepted,TResult? Function()?  cleared,TResult? Function()?  loadHistory,}) {final _that = this;
 switch (_that) {
 case _Started() when started != null:
 return started();case _IncomingFromPush() when incomingFromPush != null:
@@ -198,7 +208,9 @@ return incomingFromPush(_that.payload);case _Outgoing() when outgoing != null:
 return outgoing(_that.calleeId,_that.bookingId);case _Accept() when accept != null:
 return accept(_that.id);case _Reject() when reject != null:
 return reject(_that.id);case _End() when end != null:
-return end(_that.id);case _LoadHistory() when loadHistory != null:
+return end(_that.id);case _PeerAccepted() when peerAccepted != null:
+return peerAccepted(_that.id);case _Cleared() when cleared != null:
+return cleared();case _LoadHistory() when loadHistory != null:
 return loadHistory();case _:
   return null;
 
@@ -576,6 +588,104 @@ as String,
 
 
 }
+
+/// @nodoc
+
+
+class _PeerAccepted implements CallEvent {
+  const _PeerAccepted(this.id);
+  
+
+ final  String id;
+
+/// Create a copy of CallEvent
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$PeerAcceptedCopyWith<_PeerAccepted> get copyWith => __$PeerAcceptedCopyWithImpl<_PeerAccepted>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PeerAccepted&&(identical(other.id, id) || other.id == id));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,id);
+
+@override
+String toString() {
+  return 'CallEvent.peerAccepted(id: $id)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$PeerAcceptedCopyWith<$Res> implements $CallEventCopyWith<$Res> {
+  factory _$PeerAcceptedCopyWith(_PeerAccepted value, $Res Function(_PeerAccepted) _then) = __$PeerAcceptedCopyWithImpl;
+@useResult
+$Res call({
+ String id
+});
+
+
+
+
+}
+/// @nodoc
+class __$PeerAcceptedCopyWithImpl<$Res>
+    implements _$PeerAcceptedCopyWith<$Res> {
+  __$PeerAcceptedCopyWithImpl(this._self, this._then);
+
+  final _PeerAccepted _self;
+  final $Res Function(_PeerAccepted) _then;
+
+/// Create a copy of CallEvent
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? id = null,}) {
+  return _then(_PeerAccepted(
+null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class _Cleared implements CallEvent {
+  const _Cleared();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Cleared);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'CallEvent.cleared()';
+}
+
+
+}
+
+
+
 
 /// @nodoc
 

@@ -4,6 +4,7 @@ import { localizedString, paginationQuerySchema } from '../../lib/common.js';
 
 export const honeymoonListQuery = paginationQuerySchema.extend({
   q: z.string().optional(),
+  country: z.string().length(2).optional(),
 });
 
 export const honeymoonBody = z.object({
@@ -13,7 +14,7 @@ export const honeymoonBody = z.object({
   nights: z.number().int().positive(),
   priceAmount: z.number().nonnegative(),
   currency: z.string().length(3).default('AED'),
-  coverKey: z.string().optional(),
+  coverKey: z.string().nullish(),
   galleryKeys: z.array(z.string()).default([]),
   inclusions: z.array(z.string()).default([]),
   isPublished: z.boolean().default(true),

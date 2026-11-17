@@ -1,10 +1,10 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { requireAuth } from '../../middleware/auth.js';
-import { requireRole } from '../../middleware/rbac.js';
+import { requireRole, requireSuperAdmin } from '../../middleware/rbac.js';
 import { validate } from '../../middleware/validate.js';
 import { settingController } from './setting.controller.js';
-import { settingBody, settingListQuery, settingPatch } from './setting.schema.js';
+import { settingBody, settingListQuery, settingPatch, settingPublicQuery } from './setting.schema.js';
 
 export const settingsRouter = Router();
 
@@ -22,9 +22,16 @@ settingsRouter.get(
   validate({ query: settingListQuery }),
   settingController.list,
 );
-settingsRouter.get('/public', settingController.public);
+settingsRouter.get('/public', validate({ query: settingPublicQuery }), settingController.public);
 settingsRouter.get('/integrations', requireAuth, requireRole('admin'), settingController.integrations);
-settingsRouter.post('/', requireAuth, requireRole('admin'), validate({ body: settingBody }), settingController.upsert);
+settingsRouter.post(
+  '/',
+  requireAuth,
+  requireRole('admin'),
+  requireSuperAdmin,
+  validate({ body: settingBody }),
+  settingController.upsert,
+);
 settingsRouter.get(
   '/:key',
   requireAuth,
@@ -36,6 +43,7 @@ settingsRouter.patch(
   '/:key',
   requireAuth,
   requireRole('admin'),
+  requireSuperAdmin,
   validate({ params: z.object({ key: z.string().min(1) }), body: settingPatch }),
   settingController.update,
 );

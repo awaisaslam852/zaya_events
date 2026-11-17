@@ -8,4 +8,6 @@ abstract class VisitsRepository {
   Future<Either<Failure, VisitsItem>> getById(String id);
   Future<Either<Failure, VisitsItem>> cancel(String id);
   Future<Either<Failure, VisitsItem>> decide(String id, {required bool accepted});
+  Future<Either<Failure, VisitsItem>> approve(String id);
+  Future<Either<Failure, VisitsItem>> complete(String id);
 }

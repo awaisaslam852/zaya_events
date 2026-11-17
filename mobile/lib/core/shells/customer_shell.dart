@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/auth/app_role.dart';
+import '../../core/sync/screen_sync.dart';
 import 'nav_destinations.dart';
 
 class CustomerShell extends StatelessWidget {
@@ -10,12 +11,15 @@ class CustomerShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final location = GoRouterState.of(context).uri.path;
-    return Scaffold(
-      body: child,
-      bottomNavigationBar: RoleNavBar(
-        role: AppRole.customer,
-        selectedIndex: tabIndexForPath(location, customerTabPaths),
-        onDestinationSelected: (index) => context.go(customerTabPaths[index]),
+    return ShellBadgeSync(
+      includeCart: true,
+      child: Scaffold(
+        body: child,
+        bottomNavigationBar: RoleNavBar(
+          role: AppRole.customer,
+          selectedIndex: tabIndexForPath(location, customerTabPaths),
+          onDestinationSelected: (index) => context.go(customerTabPaths[index]),
+        ),
       ),
     );
   }

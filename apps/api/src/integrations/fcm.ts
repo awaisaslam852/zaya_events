@@ -15,6 +15,54 @@ async function accessToken(): Promise<string | null> {
   return token ?? null;
 }
 
+function stringData(data: Record<string, string> | undefined, title: string, body: string): Record<string, string> {
+  const entries = Object.entries({ title, body, ...(data ?? {}) }).map(([key, value]) => [key, String(value ?? '')]);
+  return Object.fromEntries(entries) as Record<string, string>;
+}
+
+export function buildFcmMessage(params: {
+  token: string;
+  title: string;
+  body: string;
+  data?: Record<string, string>;
+}): { message: Record<string, unknown> } {
+  const isCall = params.data?.type === 'incoming_call';
+  const data = stringData(params.data, params.title, params.body);
+  return {
+    message: {
+      token: params.token,
+      data,
+      // Data-only on Android so a closed app still wakes and can show the incoming-call screen.
+      // iOS still gets an alert via APNs so the user can tap through when the app is killed.
+      ...(isCall ? {} : { notification: { title: params.title, body: params.body } }),
+      android: {
+        priority: 'HIGH',
+        ...(isCall
+          ? { ttl: '60s' }
+          : {
+              notification: {
+                channelId: 'default',
+                sound: 'default',
+                notificationPriority: 'PRIORITY_HIGH',
+              },
+            }),
+      },
+      apns: {
+        headers: { 'apns-priority': '10', 'apns-push-type': 'alert' },
+        payload: {
+          aps: {
+            alert: { title: params.title, body: params.body },
+            sound: 'default',
+            badge: 1,
+            'content-available': 1,
+            ...(isCall ? { 'interruption-level': 'time-sensitive' } : {}),
+          },
+        },
+      },
+    },
+  };
+}
+
 export async function sendFcm(params: {
   tokens: string[];
   title: string;
@@ -38,15 +86,14 @@ export async function sendFcm(params: {
           authorization: `Bearer ${token}`,
           'content-type': 'application/json',
         },
-        body: JSON.stringify({
-          message: {
+        body: JSON.stringify(
+          buildFcmMessage({
             token: deviceToken,
-            notification: { title: params.title, body: params.body },
-            data: params.data ?? {},
-            android: { priority: 'HIGH' },
-            apns: { headers: { 'apns-priority': '10' } },
-          },
-        }),
+            title: params.title,
+            body: params.body,
+            data: params.data,
+          }),
+        ),
       });
       if (!response.ok) {
         const text = await response.text();

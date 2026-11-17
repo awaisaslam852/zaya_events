@@ -11,7 +11,7 @@ import type {
 
 export const chatController = {
   list: handle(async (req, res) => {
-    sendSuccess(res, await chatService.list(actor(req).id, req.query as unknown as z.infer<typeof conversationListQuery>));
+    sendSuccess(res, await chatService.list(actor(req), req.query as unknown as z.infer<typeof conversationListQuery>));
   }),
   start: handle(async (req, res) => {
     sendSuccess(res, await chatService.start(actor(req).id, req.body as z.infer<typeof conversationCreateSchema>), 201);
@@ -20,13 +20,13 @@ export const chatController = {
     sendSuccess(res, await chatService.startSupport(actor(req).id), 201);
   }),
   get: handle(async (req, res) => {
-    sendSuccess(res, await chatService.get(actor(req).id, String(req.params.id)));
+    sendSuccess(res, await chatService.get(actor(req), String(req.params.id)));
   }),
   messages: handle(async (req, res) => {
     sendSuccess(
       res,
       await chatService.messages(
-        actor(req).id,
+        actor(req),
         String(req.params.id),
         req.query as unknown as z.infer<typeof messageListQuery>,
       ),
@@ -35,11 +35,11 @@ export const chatController = {
   send: handle(async (req, res) => {
     sendSuccess(
       res,
-      await chatService.send(actor(req).id, String(req.params.id), req.body as z.infer<typeof messageCreateSchema>),
+      await chatService.send(actor(req), String(req.params.id), req.body as z.infer<typeof messageCreateSchema>),
       201,
     );
   }),
   read: handle(async (req, res) => {
-    sendSuccess(res, await chatService.markRead(actor(req).id, String(req.params.id)));
+    sendSuccess(res, await chatService.markRead(actor(req), String(req.params.id)));
   }),
 };

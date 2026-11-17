@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { requireAuth } from '../../middleware/auth.js';
-import { requireRole } from '../../middleware/rbac.js';
+import { requireRole, requireSuperAdmin } from '../../middleware/rbac.js';
 import { validate } from '../../middleware/validate.js';
 import { idParamSchema } from '../../lib/common.js';
 import { serviceCategoryController } from './service-category.controller.js';
@@ -20,6 +20,7 @@ serviceCategoriesRouter.post(
   '/',
   requireAuth,
   requireRole('admin'),
+  requireSuperAdmin,
   validate({ body: serviceCategoryBody }),
   serviceCategoryController.create,
 );
@@ -27,6 +28,7 @@ serviceCategoriesRouter.patch(
   '/:id',
   requireAuth,
   requireRole('admin'),
+  requireSuperAdmin,
   validate({ params: idParamSchema, body: serviceCategoryPatch }),
   serviceCategoryController.update,
 );
@@ -34,6 +36,7 @@ serviceCategoriesRouter.post(
   '/:id/enable',
   requireAuth,
   requireRole('admin'),
+  requireSuperAdmin,
   validate({ params: idParamSchema }),
   serviceCategoryController.enable,
 );
@@ -41,6 +44,7 @@ serviceCategoriesRouter.post(
   '/:id/disable',
   requireAuth,
   requireRole('admin'),
+  requireSuperAdmin,
   validate({ params: idParamSchema }),
   serviceCategoryController.disable,
 );
@@ -48,6 +52,7 @@ serviceCategoriesRouter.delete(
   '/:id',
   requireAuth,
   requireRole('admin'),
+  requireSuperAdmin,
   validate({ params: idParamSchema }),
   serviceCategoryController.remove,
 );

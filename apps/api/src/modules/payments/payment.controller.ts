@@ -7,24 +7,24 @@ import type { paymentCreateSchema, paymentListQuery, refundSchema } from './paym
 export const paymentController = {
   list: handle(async (req, res) => {
     const user = actor(req);
-    sendSuccess(res, await paymentService.list(user.id, user.role, req.query as unknown as z.infer<typeof paymentListQuery>));
+    sendSuccess(res, await paymentService.list(user.id, user.role, req.query as unknown as z.infer<typeof paymentListQuery>, user));
   }),
   get: handle(async (req, res) => {
     const user = actor(req);
-    sendSuccess(res, await paymentService.get(user.id, user.role, String(req.params.id)));
+    sendSuccess(res, await paymentService.get(user.id, user.role, String(req.params.id), user));
   }),
   intent: handle(async (req, res) => {
     const user = actor(req);
-    sendSuccess(res, await paymentService.createIntent(user.id, user.role, req.body as z.infer<typeof paymentCreateSchema>), 201);
+    sendSuccess(res, await paymentService.createIntent(user.id, user.role, req.body as z.infer<typeof paymentCreateSchema>, user), 201);
   }),
   confirm: handle(async (req, res) => {
     const user = actor(req);
-    sendSuccess(res, await paymentService.confirm(user.id, user.role, String(req.params.id)));
+    sendSuccess(res, await paymentService.confirm(user.id, user.role, String(req.params.id), user));
   }),
   refund: handle(async (req, res) => {
     const user = actor(req);
     const body = req.body as z.infer<typeof refundSchema>;
-    sendSuccess(res, await paymentService.refund(user.id, user.role, String(req.params.id), body.amount));
+    sendSuccess(res, await paymentService.refund(user.id, user.role, String(req.params.id), body.amount, user));
   }),
   webhook: handle(async (req, res) => {
     const signature = req.header('stripe-signature');

@@ -32,4 +32,13 @@ class NotificationsRepositoryImpl implements NotificationsRepository {
     return _client.get('/notifications/$id', parse: (data) => NotificationsItem(Map<String, dynamic>.from(data as Map)));
   }
 
+  @override
+  Future<Either<Failure, bool>> markRead(String id) {
+    return _client.post('/notifications/$id/read', parse: (_) => true);
+  }
+
+  @override
+  Future<Either<Failure, bool>> markAllRead() {
+    return _client.post('/notifications/read-all', parse: (_) => true);
+  }
 }
